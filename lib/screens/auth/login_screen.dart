@@ -57,15 +57,12 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _studentPasswordController.text,
       );
 
+      // Immediately store the authenticated user profile in session state
+      final state = MockStateService();
+      state.setCurrentUser(user);
+
       // Sync FCM Token with backend for student user
       FcmService().syncTokenWithBackend();
-
-      final state = MockStateService();
-      state.loginReal(
-        identifier: _studentIdentifierController.text.trim(),
-        password: _studentPasswordController.text,
-        role: AppConstants.roleStudent,
-      );
 
       if (!mounted) return;
 
@@ -106,6 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _adminEmailController.text.trim(),
         password: _adminPasswordController.text,
       );
+
+      final state = MockStateService();
+      state.setCurrentUser(user);
 
       FcmService().syncTokenWithBackend();
 

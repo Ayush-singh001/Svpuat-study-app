@@ -78,19 +78,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         collegeId: state.selectedCollege?.id,
       );
 
-      FcmService().syncTokenWithBackend();
+      // Immediately set current user in state
+      state.setCurrentUser(user);
 
-      state.registerReal(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        mobile: _mobileController.text.trim(),
-        studentId: _studentIdController.text.trim(),
-        password: _passwordController.text,
-        course: _selectedCourse,
-        department: _selectedDepartment,
-        year: _selectedYear,
-        semester: _selectedSemester,
-      );
+      FcmService().syncTokenWithBackend();
 
       if (!mounted) return;
 

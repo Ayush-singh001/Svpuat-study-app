@@ -61,6 +61,14 @@ const userSchema = new mongoose.Schema(
         trim: true,
       },
     ],
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
     collegeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'College',
@@ -75,6 +83,8 @@ const userSchema = new mongoose.Schema(
 userSchema.set('toJSON', {
   transform: (doc, ret) => {
     delete ret.passwordHash;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpires;
     delete ret.__v;
     return ret;
   },

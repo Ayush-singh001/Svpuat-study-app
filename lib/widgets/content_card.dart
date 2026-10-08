@@ -17,6 +17,11 @@ class ContentCard extends StatelessWidget {
     this.onDelete,
   });
 
+  bool get _hasValidPdf =>
+      content.fileUrl != null &&
+      content.fileUrl!.isNotEmpty &&
+      !content.fileUrl!.contains('/demo/');
+
   IconData _getIconForType(String type) {
     switch (type) {
       case 'Notes':
@@ -48,7 +53,7 @@ class ContentCard extends StatelessWidget {
   }
 
   void _openDocument(BuildContext context) {
-    if (content.fileUrl != null && content.fileUrl!.isNotEmpty) {
+    if (_hasValidPdf) {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PdfViewerScreen(
@@ -58,7 +63,7 @@ class ContentCard extends StatelessWidget {
         ),
       );
     } else {
-      _showToast(context, 'No document attached.');
+      _showToast(context, 'PDF not uploaded yet');
     }
   }
 
@@ -66,7 +71,7 @@ class ContentCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: _getColorForType(content.type),
+        backgroundColor: _hasValidPdf ? _getColorForType(content.type) : AppColors.textSecondary,
       ),
     );
   }
@@ -228,14 +233,18 @@ class ContentCard extends StatelessWidget {
                     onTap: () => _openDocument(context),
                     child: Row(
                       children: [
-                        Icon(Icons.menu_book_rounded, size: 16, color: themeColor),
+                        Icon(
+                          _hasValidPdf ? Icons.menu_book_rounded : Icons.cloud_off_rounded,
+                          size: 16,
+                          color: _hasValidPdf ? themeColor : AppColors.textLight,
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          'Read PDF',
+                          _hasValidPdf ? 'Read PDF' : 'PDF not uploaded yet',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: themeColor,
+                            color: _hasValidPdf ? themeColor : AppColors.textLight,
                           ),
                         ),
                       ],

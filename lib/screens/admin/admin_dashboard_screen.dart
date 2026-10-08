@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../services/auth_service.dart';
 import '../../services/mock_state_service.dart';
 import '../../widgets/content_card.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../widgets/question_card.dart';
 import '../../widgets/ui_helpers.dart';
 import '../auth/login_screen.dart';
@@ -19,6 +21,168 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   String _selectedFilter = 'All';
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final currentPassController = TextEditingController();
+    final newPassController = TextEditingController();
+    final confirmPassController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    bool isSubmitting = false;
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.lock_reset_rounded, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text('Change Password', style: TextStyle(fontSize: 16)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (dialogError != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorBg,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            dialogError!,
+                            style: const TextStyle(color: AppColors.error, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      CustomTextField(
+                        controller: currentPassController,
+                        label: 'Current Password',
+                        hint: '••••••••',
+                        prefixIcon: Icons.lock_outline_rounded,
+                        isPassword: true,
+                        obscureText: obscureCurrent,
+                        onToggleVisibility: () {
+                          setDialogState(() => obscureCurrent = !obscureCurrent);
+                        },
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'Enter current password';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: newPassController,
+                        label: 'New Password (min 8 chars)',
+                        hint: '••••••••',
+                        prefixIcon: Icons.key_rounded,
+                        isPassword: true,
+                        obscureText: obscureNew,
+                        onToggleVisibility: () {
+                          setDialogState(() => obscureNew = !obscureNew);
+                        },
+                        validator: (val) {
+                          if (val == null || val.length < 8) {
+                            return 'Min 8 characters required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: confirmPassController,
+                        label: 'Confirm New Password',
+                        hint: '••••••••',
+                        prefixIcon: Icons.lock_reset_rounded,
+                        isPassword: true,
+                        obscureText: obscureConfirm,
+                        onToggleVisibility: () {
+                          setDialogState(() => obscureConfirm = !obscureConfirm);
+                        },
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Confirm new password';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+
+                          if (newPassController.text != confirmPassController.text) {
+                            setDialogState(() {
+                              dialogError = 'New password and confirmation do not match';
+                            });
+                            return;
+                          }
+
+                          setDialogState(() {
+                            isSubmitting = true;
+                            dialogError = null;
+                          });
+
+                          try {
+                            final message = await AuthService().changePassword(
+                              currentPassword: currentPassController.text,
+                              newPassword: newPassController.text,
+                            );
+
+                            if (!context.mounted) return;
+                            Navigator.of(ctx).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(message),
+                                backgroundColor: AppColors.success,
+                              ),
+                            );
+                          } catch (e) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                              dialogError = e.toString().replaceAll('Exception: ', '');
+                            });
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Update Password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +215,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.lock_reset_rounded),
+            tooltip: 'Change Password',
+            onPressed: () => _showChangePasswordDialog(context),
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),

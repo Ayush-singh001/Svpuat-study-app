@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const noteRoutes = require('./routes/noteRoutes');
 const questionPaperRoutes = require('./routes/questionPaperRoutes');
 const syllabusRoutes = require('./routes/syllabusRoutes');
@@ -63,6 +64,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRateLimiter, authRoutes);
+app.use('/api/admin', authRateLimiter, adminRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/question-papers', questionPaperRoutes);
 app.use('/api/syllabus', syllabusRoutes);

@@ -1,8 +1,10 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const College = require('../models/College');
+const EmailService = require('../services/emailService');
 
 // Helper to generate JWT Token
 const generateToken = (userId, role) => {
@@ -262,6 +264,199 @@ const adminLogin = async (req, res) => {
   }
 };
 
+// @desc    Request Password Reset Link via Email (Generic response to prevent email enumeration)
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    if (!checkDbConnection(res)) return;
+
+    const { email } = req.body;
+
+    const genericMessage = 'If the account exists, a password reset link has been sent to the registered email.';
+
+    if (!email || !email.trim()) {
+      return res.status(200).json({
+        success: true,
+        message: genericMessage,
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: genericMessage,
+      });
+    }
+
+    // Generate secure random 32-byte token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+
+    // Hash token before saving to DB
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes expiration
+    await user.save();
+
+    // Construct reset link containing raw token
+    const baseUrl = process.env.RESET_PASSWORD_BASE_URL || 'https://svpuat-study-app.onrender.com';
+    const resetLink = `${baseUrl}/reset-password?token=${rawToken}`;
+
+    // Dispatch email
+    await EmailService.sendPasswordResetEmail(user.email, resetLink);
+
+    const responsePayload = {
+      success: true,
+      message: genericMessage,
+    };
+
+    // Include devResetToken in DEVELOPMENT mode
+    if ((process.env.EMAIL_PROVIDER || 'CONSOLE').toUpperCase() === 'CONSOLE') {
+      responsePayload.devResetToken = rawToken;
+    }
+
+    return res.status(200).json(responsePayload);
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    return res.status(200).json({
+      success: true,
+      message: 'If the account exists, a password reset link has been sent to the registered email.',
+    });
+  }
+};
+
+// @desc    Reset Password using Token
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    if (!checkDbConnection(res)) return;
+
+    const { token, password, confirmPassword } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password reset token is required',
+      });
+    }
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long',
+      });
+    }
+
+    if (confirmPassword && password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password and Confirm Password do not match',
+      });
+    }
+
+    // Hash supplied token to match DB entry
+    const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
+
+    // Find user with valid unexpired token
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select('+passwordHash +resetPasswordToken +resetPasswordExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password reset token is invalid, expired, or has already been used.',
+      });
+    }
+
+    // Hash new password securely
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(password, salt);
+
+    // Invalidate/clear reset token after one-time use
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successfully. You can now log in.',
+    });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error resetting password',
+    });
+  }
+};
+
+// @desc    Change Password for Authenticated User (Admin / Student)
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+  try {
+    if (!checkDbConnection(res)) return;
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide current password and new password',
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long',
+      });
+    }
+
+    // Fetch authenticated user with passwordHash
+    const user = await User.findById(req.user._id).select('+passwordHash');
+    if (!user || !user.passwordHash) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account or password record not found',
+      });
+    }
+
+    // Verify Current Password using bcrypt
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Hash new password securely
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    console.error('Change Password Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error changing password',
+    });
+  }
+};
+
 // @desc    Get Current Authenticated User Profile
 // @route   GET /api/auth/me
 // @access  Private
@@ -295,6 +490,9 @@ module.exports = {
   registerStudent,
   loginStudent,
   adminLogin,
+  forgotPassword,
+  resetPassword,
+  changePassword,
   getMe,
   logout,
 };

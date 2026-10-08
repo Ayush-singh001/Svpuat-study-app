@@ -41,6 +41,11 @@ class MockStateService extends ChangeNotifier {
   List<ImportantQuestion> get importantQuestions => List.unmodifiable(_importantQuestions);
   bool get isLoggedIn => _currentUser != null;
 
+  void setCurrentUser(AppUser user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
   Future<void> initSession() async {
     await ApiService().init();
     try {
@@ -105,7 +110,7 @@ class MockStateService extends ChangeNotifier {
         year: '2nd Year',
         semester: '3rd Semester',
         subject: 'Data Structures & Algorithms',
-        fileUrl: 'https://svpuat.ac.in/materials/dsa_unit1.pdf',
+        fileUrl: '',
         fileName: 'SVPUAT_DSA_Unit1_Notes.pdf',
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         uploadedBy: 'Dr. R.K. Singh (CSE Dept)',
@@ -122,7 +127,7 @@ class MockStateService extends ChangeNotifier {
         year: '2nd Year',
         semester: '3rd Semester',
         subject: 'Database Management Systems',
-        fileUrl: 'https://svpuat.ac.in/materials/dbms_sql.pdf',
+        fileUrl: '',
         fileName: 'SVPUAT_DBMS_Notes.pdf',
         createdAt: DateTime.now().subtract(const Duration(days: 3)),
         uploadedBy: 'Prof. Anil Kumar',
@@ -141,7 +146,7 @@ class MockStateService extends ChangeNotifier {
         subject: 'Database Management Systems',
         examType: 'Mid-Term Exam',
         paperYear: '2024',
-        fileUrl: 'https://svpuat.ac.in/exams/dbms_mid2024.pdf',
+        fileUrl: '',
         fileName: 'SVPUAT_DBMS_Mid2024_Paper.pdf',
         createdAt: DateTime.now().subtract(const Duration(days: 5)),
         uploadedBy: 'SVPUAT Examination Cell',
@@ -157,7 +162,7 @@ class MockStateService extends ChangeNotifier {
         department: 'Computer Science & Engineering',
         year: 'All Years',
         semester: 'All Semesters',
-        fileUrl: 'https://svpuat.ac.in/syllabus/btech_cs_syllabus.pdf',
+        fileUrl: '',
         fileName: 'SVPUAT_BTech_CS_Syllabus.pdf',
         createdAt: DateTime.now().subtract(const Duration(days: 15)),
         uploadedBy: 'Dean Academics',
@@ -171,7 +176,7 @@ class MockStateService extends ChangeNotifier {
         collegeId: AppConstants.svpuatCollegeId,
         department: 'All Departments',
         semester: 'All Semesters',
-        fileUrl: 'https://svpuat.ac.in/notices/mid_term_dates.pdf',
+        fileUrl: '',
         fileName: 'SVPUAT_Exam_Notice_Nov2024.pdf',
         createdAt: DateTime.now().subtract(const Duration(hours: 6)),
         uploadedBy: 'Office of Registrar',

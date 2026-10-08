@@ -9,18 +9,15 @@ class ApiService {
   ApiService._internal();
 
   // Configurable Base URL
-  // Can be set at compile time via: --dart-define=API_BASE_URL=https://your-production-domain.com/api
+  // Default Render Production Backend: https://svpuat-study-app.onrender.com/api
+  // Can be overridden at compile time via: --dart-define=API_BASE_URL=...
   static const String _customBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   static String get baseUrl {
     if (_customBaseUrl.isNotEmpty) {
       return _customBaseUrl;
     }
-    if (kIsWeb) return 'http://localhost:5000/api';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5000/api';
-    }
-    return 'http://localhost:5000/api';
+    return 'https://svpuat-study-app.onrender.com/api';
   }
 
   static const String _tokenKey = 'svpuat_auth_token';
@@ -83,7 +80,8 @@ class ApiService {
       final response = await http.get(uri, headers: _headers);
       return _processResponse(response);
     } catch (e) {
-      throw Exception('Network or Server Connection Error: $e');
+      if (e.toString().contains('HTTP ')) rethrow;
+      throw Exception('Network or Connection Error: $e');
     }
   }
 
@@ -98,7 +96,8 @@ class ApiService {
       );
       return _processResponse(response);
     } catch (e) {
-      throw Exception('Network or Server Connection Error: $e');
+      if (e.toString().contains('HTTP ')) rethrow;
+      throw Exception('Network or Connection Error: $e');
     }
   }
 
@@ -113,7 +112,8 @@ class ApiService {
       );
       return _processResponse(response);
     } catch (e) {
-      throw Exception('Network or Server Connection Error: $e');
+      if (e.toString().contains('HTTP ')) rethrow;
+      throw Exception('Network or Connection Error: $e');
     }
   }
 
@@ -124,7 +124,8 @@ class ApiService {
       final response = await http.delete(uri, headers: _headers);
       return _processResponse(response);
     } catch (e) {
-      throw Exception('Network or Server Connection Error: $e');
+      if (e.toString().contains('HTTP ')) rethrow;
+      throw Exception('Network or Connection Error: $e');
     }
   }
 
@@ -134,16 +135,21 @@ class ApiService {
     try {
       jsonBody = jsonDecode(response.body);
     } catch (_) {
-      jsonBody = {'message': response.body};
+      String text = response.body;
+      if (text.contains('<pre>')) {
+        final match = RegExp(r'<pre>(.*?)</pre>', dotAll: true).firstMatch(text);
+        if (match != null) text = match.group(1)?.trim() ?? text;
+      }
+      jsonBody = {'message': text};
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonBody;
     } else {
-      final message = jsonBody is Map && jsonBody.containsKey('message')
-          ? jsonBody['message']
+      final message = jsonBody is Map && jsonBody.containsKey('message') && jsonBody['message'].toString().isNotEmpty
+          ? jsonBody['message'].toString()
           : 'Server Error (${response.statusCode})';
-      throw Exception(message);
+      throw Exception('HTTP ${response.statusCode}: $message');
     }
   }
 }

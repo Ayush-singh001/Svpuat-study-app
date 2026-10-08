@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../services/mock_state_service.dart';
 import '../../widgets/custom_button.dart';
 import '../auth/login_screen.dart';
+import 'add_college_admin_screen.dart';
 import 'manage_colleges_screen.dart';
 
 class SuperAdminDashboardScreen extends StatefulWidget {
@@ -174,7 +175,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Management Option 2: College Admins
+            // Management Option 2: Add College Admin
             Card(
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
@@ -184,20 +185,19 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                     color: AppColors.secondary.withAlpha(25),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.people_alt, color: AppColors.secondary, size: 28),
+                  child: const Icon(Icons.person_add_alt_1_rounded, color: AppColors.secondary, size: 28),
                 ),
                 title: const Text(
-                  'College Administrators',
+                  'Add College Administrator',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                subtitle: const Text('Assign or manage admin credentials for each college'),
+                subtitle: const Text('Create and assign a new College Admin account to an active college'),
                 trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.secondary),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('College admin assignments managed within colleges.'),
-                    ),
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AddCollegeAdminScreen()),
                   );
+                  setState(() {});
                 },
               ),
             ),

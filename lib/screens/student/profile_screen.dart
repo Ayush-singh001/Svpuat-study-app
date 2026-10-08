@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../models/user_model.dart';
 import '../../services/mock_state_service.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/ui_helpers.dart';
 import '../auth/login_screen.dart';
-import '../auth/register_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +15,36 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  Future<void> _checkSession() async {
+    final stateService = MockStateService();
+    if (stateService.currentUser == null) {
+      setState(() {
+        _isLoading = true;
+      });
+      await stateService.initSession();
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (stateService.currentUser == null) {
+        // Unauthenticated access attempt -> redirect to initial Login screen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stateService = MockStateService();
@@ -24,77 +55,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Student Profile'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: user == null
-            ? _buildGuestView(context)
-            : _buildLoggedInUserView(context, user),
-      ),
+      body: _isLoading
+          ? const LoadingStateView(message: 'Loading student profile...')
+          : user == null
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: _buildLoggedInUserView(context, user),
+                ),
     );
   }
 
-  Widget _buildGuestView(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(15),
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withAlpha(30)),
-          ),
-          child: const Icon(
-            Icons.account_circle_outlined,
-            size: 72,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'SVPUAT Portal Guest',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Sign in or register your account to view personal academic records and personalized portal settings.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 32),
-        CustomButton(
-          text: 'Sign In to Portal',
-          icon: Icons.login_rounded,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        CustomButton(
-          text: 'Register New Account',
-          isOutlined: true,
-          icon: Icons.person_add_outlined,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const RegisterScreen()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoggedInUserView(BuildContext context, user) {
+  Widget _buildLoggedInUserView(BuildContext context, AppUser user) {
     final stateService = MockStateService();
 
     return Column(
@@ -155,24 +127,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.account_balance_rounded, color: Colors.white, size: 28),
-              SizedBox(width: 12),
+              const Icon(Icons.account_balance_rounded, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      AppConstants.svpuatFullName,
-                      style: TextStyle(
+                      user.collegeName.isNotEmpty ? user.collegeName : AppConstants.svpuatFullName,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
+                    const SizedBox(height: 2),
+                    const Text(
                       AppConstants.svpuatLocation,
                       style: TextStyle(color: Colors.white70, fontSize: 11),
                     ),

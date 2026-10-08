@@ -149,7 +149,7 @@ class _UploadContentScreenState extends State<UploadContentScreen> {
       subject: _subjectController.text.trim().isEmpty ? 'General' : _subjectController.text.trim(),
       examType: _selectedType == AppConstants.typeQuestionPaper ? _selectedExamType : null,
       paperYear: _selectedType == AppConstants.typeQuestionPaper ? _paperYearController.text.trim() : null,
-      fileUrl: _uploadedFileUrl ?? 'https://svpuat.ac.in/files/document.pdf',
+      fileUrl: _uploadedFileUrl ?? '',
       publicId: _uploadedPublicId ?? '',
       fileName: _uploadedFileName ?? (_pickedFile?.name ?? 'svpuat_document.pdf'),
       fileSize: _uploadedFileSize ?? '',

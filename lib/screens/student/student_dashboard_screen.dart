@@ -5,7 +5,6 @@ import '../../models/content_model.dart';
 import '../../services/mock_state_service.dart';
 import '../../widgets/content_card.dart';
 import '../../widgets/ui_helpers.dart';
-import '../auth/login_screen.dart';
 import 'notices_screen.dart';
 import 'notifications_screen.dart';
 import 'pdf_viewer_screen.dart';
@@ -32,8 +31,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stateService = MockStateService();
-    final currentUser = stateService.currentUser;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -62,28 +59,15 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               );
             },
           ),
-          if (currentUser == null)
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-              child: const Text(
-                'Login',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.account_circle_outlined, size: 26),
-              tooltip: 'Profile',
-              onPressed: () {
-                setState(() {
-                  _currentIndex = 3;
-                });
-              },
-            ),
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined, size: 26),
+            tooltip: 'Profile',
+            onPressed: () {
+              setState(() {
+                _currentIndex = 3;
+              });
+            },
+          ),
         ],
       ),
       body: IndexedStack(

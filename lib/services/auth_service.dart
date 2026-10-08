@@ -76,6 +76,61 @@ class AuthService {
     return AppUser.fromJson(response['user']);
   }
 
+  // Super Admin: Create College Admin Account
+  Future<AppUser> createCollegeAdmin({
+    required String fullName,
+    required String email,
+    required String mobile,
+    required String collegeId,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    final response = await _api.post('/auth/admin/user', {
+      'fullName': fullName,
+      'email': email,
+      'mobile': mobile,
+      'collegeId': collegeId,
+      'password': password,
+      'confirmPassword': confirmPassword,
+    });
+
+    return AppUser.fromJson(response['data']);
+  }
+
+  // Request Password Reset Link
+  Future<String> requestForgotPassword(String email) async {
+    final response = await _api.post('/auth/forgot-password', {
+      'email': email,
+    });
+    return response['message'] ?? 'If the account exists, a password reset link has been sent.';
+  }
+
+  // Reset Password Using Token
+  Future<String> resetPassword({
+    required String token,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    final response = await _api.post('/auth/reset-password', {
+      'token': token,
+      'password': password,
+      'confirmPassword': confirmPassword,
+    });
+    return response['message'] ?? 'Password reset successfully. You can now log in.';
+  }
+
+  // Change Password for Authenticated Admin / Student
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _api.put('/auth/change-password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+    return response['message'] ?? 'Password updated successfully';
+  }
+
   // Alias for backward compatibility
   Future<AppUser> login({
     required String identifier,
@@ -114,7 +169,7 @@ class AuthService {
 
   // Admin Password Reset Help
   Future<String> forgotPassword(String email) async {
-    return 'Please contact SVPUAT Academic Administration to reset your password.';
+    return requestForgotPassword(email);
   }
 
   // Get Current Authenticated Profile
