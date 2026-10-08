@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "321934731963",
+    "project_id": "svpuat-a67d5",
+    "storage_bucket": "svpuat-a67d5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321934731963:android:bb990e7ea2be3883f5d79e",
+        "android_client_info": {
+          "package_name": "com.example.biodata"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzJ3yyzrN7Ns9abxFtFdKOwC4p66kGKfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321934731963:android:aea8c36f9e480b50f5d79e",
+        "android_client_info": {
+          "package_name": "com.example.collage_notice"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzJ3yyzrN7Ns9abxFtFdKOwC4p66kGKfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321934731963:android:0fce2d1ff2c5ae43f5d79e",
+        "android_client_info": {
+          "package_name": "com.example.svpuat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzJ3yyzrN7Ns9abxFtFdKOwC4p66kGKfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
