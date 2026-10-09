@@ -9,6 +9,7 @@ import '../../widgets/question_card.dart';
 import '../../widgets/ui_helpers.dart';
 import '../auth/login_screen.dart';
 import 'add_edit_question_screen.dart';
+import 'manage_subjects_screen.dart';
 import 'send_notification_screen.dart';
 import 'upload_content_screen.dart';
 
@@ -21,6 +22,26 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   String _selectedFilter = 'All';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRealData();
+  }
+
+  Future<void> _fetchRealData() async {
+    final state = MockStateService();
+    await Future.wait([
+      state.fetchRealNotes(),
+      state.fetchRealQuestionPapers(),
+      state.fetchRealSyllabus(),
+      state.fetchRealNotices(),
+      state.fetchRealImportantQuestions(),
+    ]);
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   void _showChangePasswordDialog(BuildContext context) {
     final currentPassController = TextEditingController();
@@ -313,6 +334,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+
+            // Subject Management Quick Module Card
+            Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.book_rounded, color: AppColors.primary, size: 28),
+                ),
+                title: const Text(
+                  'Manage Course Subjects',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text('Add, edit, or remove subjects permanently in MongoDB Atlas'),
+                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ManageSubjectsScreen()),
+                  );
+                  setState(() {});
+                },
+              ),
+            ),
             const SizedBox(height: 24),
 
             // Important Questions Management Section Header & Add Button
@@ -443,7 +492,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     setState(() {});
                   },
                   onDelete: () {
-                    _confirmDelete(context, content.id, content.title);
+                    _confirmDelete(context, content.id, content.title, content.type);
                   },
                 ),
               ),
@@ -490,13 +539,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  void _confirmDelete(BuildContext context, String contentId, String title) {
+  void _confirmDelete(BuildContext context, String contentId, String title, String type) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Material'),
-        content: Text('Are you sure you want to delete "$title"?'),
+        title: const Text('Delete Content?'),
+        content: Text('Are you sure you want to delete "$title"? Students will no longer be able to access it.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -504,16 +553,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () {
-              MockStateService().deleteContent(contentId);
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              setState(() {});
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Material deleted successfully'),
-                  backgroundColor: AppColors.error,
-                ),
-              );
+              try {
+                await MockStateService().deleteContentReal(contentId, type);
+                if (context.mounted) {
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Content deleted successfully'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Delete failed: ${e.toString().replaceAll("Exception: ", "")}'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Delete'),
           ),

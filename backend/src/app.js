@@ -13,6 +13,7 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const importantQuestionRoutes = require('./routes/importantQuestionRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const collegeRoutes = require('./routes/collegeRoutes');
+const subjectRoutes = require('./routes/subjectRoutes');
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/important-questions', importantQuestionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/colleges', collegeRoutes);
+app.use('/api/subjects', subjectRoutes);
 
 // Global Production-Safe Error Handler
 app.use((err, req, res, next) => {
