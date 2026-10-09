@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/content_model.dart';
 import '../../services/mock_state_service.dart';
+import '../../services/subject_service.dart';
 import '../../widgets/content_card.dart';
 import '../../widgets/ui_helpers.dart';
 import 'important_questions_screen.dart';
@@ -16,6 +17,8 @@ class StudyScreen extends StatefulWidget {
 }
 
 class _StudyScreenState extends State<StudyScreen> {
+  final SubjectService _subjectService = SubjectService();
+
   String _selectedContentType = AppConstants.typeNotes; // 'Notes', 'Question Paper', 'Syllabus', 'Important Questions'
   String _selectedCourse = AppConstants.courses.first;
   String _selectedDepartment = AppConstants.departments.first;
@@ -23,20 +26,62 @@ class _StudyScreenState extends State<StudyScreen> {
   String _selectedSemester = AppConstants.semesters[2];
   String? _selectedSubject;
 
+  List<String> _dynamicSubjects = [];
+  bool _isLoadingSubjects = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDynamicSubjects();
+  }
+
+  Future<void> _loadDynamicSubjects() async {
+    setState(() {
+      _isLoadingSubjects = true;
+    });
+
+    try {
+      final user = MockStateService().currentUser;
+      final studentCollegeId = (user?.collegeId != null && user!.collegeId.isNotEmpty && user.collegeId != AppConstants.svpuatCollegeId)
+          ? user.collegeId
+          : null;
+
+      final items = await _subjectService.getSubjects(
+        course: _selectedCourse,
+        department: _selectedDepartment,
+        year: _selectedYear,
+        semester: _selectedSemester,
+        collegeId: studentCollegeId,
+      );
+
+      final dbNames = items.map((s) => s.name).where((name) => name.isNotEmpty).toList();
+
+      if (mounted) {
+        setState(() {
+          _dynamicSubjects = dbNames;
+          if (_selectedSubject == null || !_dynamicSubjects.contains(_selectedSubject)) {
+            _selectedSubject = _dynamicSubjects.isNotEmpty ? _dynamicSubjects.first : null;
+          }
+          _isLoadingSubjects = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingSubjects = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stateService = MockStateService();
 
-    final key = '${_selectedCourse}_$_selectedSemester';
-    final availableSubjects = AppConstants.subjectsByCourseAndSemester[key] ?? [
-      'Core Subject 1',
-      'Core Subject 2',
-      'Elective Subject',
-      'Practical Lab',
-    ];
+    final availableSubjects = _dynamicSubjects;
 
-    if (_selectedSubject == null || !availableSubjects.contains(_selectedSubject)) {
-      _selectedSubject = availableSubjects.first;
+    if (_selectedSubject == null || (_dynamicSubjects.isNotEmpty && !_dynamicSubjects.contains(_selectedSubject))) {
+      _selectedSubject = _dynamicSubjects.isNotEmpty ? _dynamicSubjects.first : null;
     }
 
     final filteredContents = stateService.getContentsByCollege(
@@ -110,6 +155,7 @@ class _StudyScreenState extends State<StudyScreen> {
                         onChanged: (val) => setState(() {
                           _selectedCourse = val!;
                           _selectedSubject = null;
+                          _loadDynamicSubjects();
                         }),
                       ),
                     ),
@@ -119,7 +165,10 @@ class _StudyScreenState extends State<StudyScreen> {
                         label: 'Department',
                         value: _selectedDepartment,
                         items: AppConstants.departments,
-                        onChanged: (val) => setState(() => _selectedDepartment = val!),
+                        onChanged: (val) => setState(() {
+                          _selectedDepartment = val!;
+                          _loadDynamicSubjects();
+                        }),
                       ),
                     ),
                   ],
@@ -132,7 +181,10 @@ class _StudyScreenState extends State<StudyScreen> {
                         label: 'Year',
                         value: _selectedYear,
                         items: AppConstants.years,
-                        onChanged: (val) => setState(() => _selectedYear = val!),
+                        onChanged: (val) => setState(() {
+                          _selectedYear = val!;
+                          _loadDynamicSubjects();
+                        }),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -144,6 +196,7 @@ class _StudyScreenState extends State<StudyScreen> {
                         onChanged: (val) => setState(() {
                           _selectedSemester = val!;
                           _selectedSubject = null;
+                          _loadDynamicSubjects();
                         }),
                       ),
                     ),
@@ -152,41 +205,62 @@ class _StudyScreenState extends State<StudyScreen> {
                 const SizedBox(height: 12),
 
                 // Subject Horizontal Selector Chips
-                const Text(
-                  'Select Subject:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textSecondary,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Select Subject:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (_isLoadingSubjects)
+                      const SizedBox(
+                        height: 12,
+                        width: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: availableSubjects.map((subj) {
-                      final isSelected = _selectedSubject == subj;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          selected: isSelected,
-                          label: Text(subj),
-                          selectedColor: AppColors.primary,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                          onSelected: (val) {
-                            if (val) {
-                              setState(() {
-                                _selectedSubject = subj;
-                              });
-                            }
-                          },
-                        ),
-                      );
-                    }).toList(),
+                    children: availableSubjects.isEmpty
+                        ? [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 4),
+                              child: Text(
+                                'No subjects configured for this semester',
+                                style: TextStyle(fontSize: 12, color: AppColors.textLight, fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                          ]
+                        : availableSubjects.map((subj) {
+                            final isSelected = _selectedSubject == subj;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                selected: isSelected,
+                                label: Text(subj),
+                                selectedColor: AppColors.primary,
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontSize: 12,
+                                ),
+                                onSelected: (val) {
+                                  if (val) {
+                                    setState(() {
+                                      _selectedSubject = subj;
+                                    });
+                                  }
+                                },
+                              ),
+                            );
+                          }).toList(),
                   ),
                 ),
               ],
@@ -201,8 +275,9 @@ class _StudyScreenState extends State<StudyScreen> {
                 : filteredContents.isEmpty
                     ? EmptyStateView(
                         title: 'No $_selectedContentType Found',
-                        message:
-                            'No materials currently uploaded for $_selectedSubject in $_selectedSemester.',
+                        message: _selectedSubject != null
+                            ? 'No materials currently uploaded for $_selectedSubject in $_selectedSemester.'
+                            : 'No subjects or materials available for $_selectedSemester.',
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
