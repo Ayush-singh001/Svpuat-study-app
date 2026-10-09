@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Subject = require('../models/Subject');
 const College = require('../models/College');
 
@@ -10,7 +11,7 @@ const getSubjects = async (req, res) => {
 
     const query = { isDeleted: { $ne: true } };
 
-    if (collegeId) {
+    if (collegeId && collegeId !== 'col_svpuat' && mongoose.Types.ObjectId.isValid(collegeId)) {
       query.collegeId = collegeId;
     } else {
       const svpuat = await College.findOne({ code: 'SVPUAT' });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/subject_model.dart';
+import '../../services/mock_state_service.dart';
 import '../../services/subject_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/ui_helpers.dart';
@@ -36,12 +37,13 @@ class _ManageSubjectsScreenState extends State<ManageSubjectsScreen> {
     });
 
     try {
+      final user = MockStateService().currentUser;
       final list = await _subjectService.getSubjects(
         course: _selectedCourse,
         department: _selectedDepartment,
         year: _selectedYear,
         semester: _selectedSemester,
-        collegeId: AppConstants.svpuatCollegeId,
+        collegeId: user?.collegeId,
       );
       if (mounted) {
         setState(() {
