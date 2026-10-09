@@ -25,11 +25,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _studentIdController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _securityAnswerController = TextEditingController();
 
   String _selectedCourse = AppConstants.courses.first;
   String _selectedDepartment = AppConstants.departments.first;
   String _selectedYear = AppConstants.years[1];
   String _selectedSemester = AppConstants.semesters[2];
+  String _selectedSecurityQuestion = AppConstants.securityQuestions.first;
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -44,6 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _studentIdController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _securityAnswerController.dispose();
     super.dispose();
   }
 
@@ -76,6 +79,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         year: _selectedYear,
         semester: _selectedSemester,
         collegeId: state.selectedCollege?.id,
+        securityQuestion: _selectedSecurityQuestion,
+        securityAnswer: _securityAnswerController.text.trim(),
       );
 
       // Immediately set current user in state
@@ -283,8 +288,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // SECTION 3: Account Security
-                _buildSectionTitle('3. Account Security', Icons.lock_outline_rounded),
+                // SECTION 3: Security Question (for Password Recovery)
+                _buildSectionTitle('3. Security Recovery Question', Icons.quiz_outlined),
+                const SizedBox(height: 12),
+                _buildDropdown(
+                  label: 'Security Question',
+                  value: _selectedSecurityQuestion,
+                  items: AppConstants.securityQuestions,
+                  onChanged: (val) => setState(() => _selectedSecurityQuestion = val!),
+                ),
+                const SizedBox(height: 14),
+                CustomTextField(
+                  controller: _securityAnswerController,
+                  label: 'Security Answer',
+                  hint: 'e.g. St. Xavier School',
+                  prefixIcon: Icons.verified_user_outlined,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Please enter security answer';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // SECTION 4: Account Password
+                _buildSectionTitle('4. Account Security', Icons.lock_outline_rounded),
                 const SizedBox(height: 12),
                 CustomTextField(
                   controller: _passwordController,

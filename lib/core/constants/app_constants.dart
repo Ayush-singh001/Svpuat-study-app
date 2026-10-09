@@ -18,6 +18,15 @@ class AppConstants {
   static const String typeSyllabus = 'Syllabus';
   static const String typeNotice = 'Notice';
 
+  // Standard Security Questions for Student Reset
+  static const List<String> securityQuestions = [
+    'What was the name of your first school?',
+    'What is your mother\'s maiden name?',
+    'What is the name of your favorite teacher?',
+    'What city were you born in?',
+    'What was the model of your first vehicle?',
+  ];
+
   // Exam Types for Question Papers
   static const List<String> examTypes = [
     'Mid-Term Exam',

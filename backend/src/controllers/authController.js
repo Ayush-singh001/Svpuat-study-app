@@ -24,7 +24,7 @@ const checkDbConnection = (res) => {
   return true;
 };
 
-// @desc    Register New SVPUAT Student with Password
+// @desc    Register New SVPUAT Student with Password & Security Recovery Question
 // @route   POST /api/auth/student/register
 // @access  Public
 const registerStudent = async (req, res) => {
@@ -42,6 +42,8 @@ const registerStudent = async (req, res) => {
       semester,
       password,
       confirmPassword,
+      securityQuestion,
+      securityAnswer,
     } = req.body;
 
     // Required Fields Validation
@@ -49,6 +51,14 @@ const registerStudent = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Please provide full name, email, mobile, student ID, and password',
+      });
+    }
+
+    // Security Question Validation
+    if (!securityQuestion || !securityQuestion.trim() || !securityAnswer || !securityAnswer.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a security recovery question and provide an answer',
       });
     }
 
@@ -111,6 +121,11 @@ const registerStudent = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    // Hash Security Answer securely using bcrypt (case-insensitive & trimmed)
+    const cleanQuestion = securityQuestion.trim();
+    const cleanAnswer = securityAnswer.toLowerCase().trim();
+    const securityAnswerHash = await bcrypt.hash(cleanAnswer, salt);
+
     // Create Student Account (Role locked to student)
     const user = await User.create({
       fullName: fullName.trim(),
@@ -118,6 +133,8 @@ const registerStudent = async (req, res) => {
       mobile: cleanMobile,
       studentId: cleanStudentId,
       passwordHash,
+      securityQuestion: cleanQuestion,
+      securityAnswerHash,
       department: department || 'Computer Science & Engineering',
       course: course || 'B.Tech',
       year: year || '2nd Year',
@@ -211,6 +228,144 @@ const loginStudent = async (req, res) => {
   }
 };
 
+// @desc    Get Student Security Question for Forgot Password
+// @route   POST /api/auth/student/security-question
+// @access  Public
+const getStudentSecurityQuestion = async (req, res) => {
+  try {
+    if (!checkDbConnection(res)) return;
+
+    const { identifier } = req.body;
+
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter Student ID or Email address',
+      });
+    }
+
+    const cleanIdentifier = identifier.trim();
+
+    // Query strictly for student role accounts
+    const user = await User.findOne({
+      $or: [
+        { email: cleanIdentifier.toLowerCase() },
+        { studentId: cleanIdentifier },
+      ],
+      role: 'student',
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No student account found with this Student ID or Email address.',
+      });
+    }
+
+    if (!user.securityQuestion || !user.securityQuestion.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account has no security question configured. Please contact SVPUAT Administration or register a new account.',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      securityQuestion: user.securityQuestion,
+    });
+  } catch (error) {
+    console.error('Get Security Question Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error fetching security question',
+    });
+  }
+};
+
+// @desc    Reset Student Password Using Security Question Answer
+// @route   POST /api/auth/student/reset-password-qa
+// @access  Public
+const resetStudentPasswordWithQA = async (req, res) => {
+  try {
+    if (!checkDbConnection(res)) return;
+
+    const { identifier, securityAnswer, newPassword, confirmPassword } = req.body;
+
+    if (!identifier || !securityAnswer) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide Student ID / Email and security answer',
+      });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long',
+      });
+    }
+
+    if (confirmPassword && newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match',
+      });
+    }
+
+    const cleanIdentifier = identifier.trim();
+
+    // Query strictly for student role user with securityAnswerHash & passwordHash
+    const user = await User.findOne({
+      $or: [
+        { email: cleanIdentifier.toLowerCase() },
+        { studentId: cleanIdentifier },
+      ],
+      role: 'student',
+    }).select('+securityAnswerHash +passwordHash');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No student account found with this Student ID or Email address.',
+      });
+    }
+
+    if (!user.securityAnswerHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account has no security question configured. Please contact SVPUAT Administration.',
+      });
+    }
+
+    // Normalize answer (trim and lowercase) before comparison
+    const cleanAnswer = securityAnswer.toLowerCase().trim();
+    const isAnswerMatch = await bcrypt.compare(cleanAnswer, user.securityAnswerHash);
+
+    if (!isAnswerMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect security answer provided.',
+      });
+    }
+
+    // Hash new password securely
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successfully. You can now log in.',
+    });
+  } catch (error) {
+    console.error('Reset Student Password QA Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error resetting student password',
+    });
+  }
+};
+
 // @desc    Admin Login (Email + Password for College Admin & Super Admin)
 // @route   POST /api/auth/admin/login
 // @access  Public
@@ -236,6 +391,13 @@ const adminLogin = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid admin credentials',
+      });
+    }
+
+    if (user.isActive === false) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account deactivated. Please contact Super Admin for access.',
       });
     }
 
@@ -489,6 +651,8 @@ const logout = async (req, res) => {
 module.exports = {
   registerStudent,
   loginStudent,
+  getStudentSecurityQuestion,
+  resetStudentPasswordWithQA,
   adminLogin,
   forgotPassword,
   resetPassword,

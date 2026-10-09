@@ -50,6 +50,15 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    securityQuestion: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    securityAnswerHash: {
+      type: String,
+      select: false,
+    },
     role: {
       type: String,
       enum: ['student', 'collegeAdmin', 'superAdmin'],
@@ -83,6 +92,7 @@ const userSchema = new mongoose.Schema(
 userSchema.set('toJSON', {
   transform: (doc, ret) => {
     delete ret.passwordHash;
+    delete ret.securityAnswerHash;
     delete ret.resetPasswordToken;
     delete ret.resetPasswordExpires;
     delete ret.__v;

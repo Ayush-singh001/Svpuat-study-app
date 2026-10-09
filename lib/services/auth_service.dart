@@ -4,7 +4,7 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _api = ApiService();
 
-  // Register Student with Password
+  // Register Student with Password and Security Question
   Future<AppUser> registerStudent({
     required String fullName,
     required String email,
@@ -17,6 +17,8 @@ class AuthService {
     String? year,
     String? semester,
     String? collegeId,
+    String? securityQuestion,
+    String? securityAnswer,
   }) async {
     final payload = <String, dynamic>{
       'fullName': fullName,
@@ -32,6 +34,8 @@ class AuthService {
     if (year != null) payload['year'] = year;
     if (semester != null) payload['semester'] = semester;
     if (collegeId != null) payload['collegeId'] = collegeId;
+    if (securityQuestion != null) payload['securityQuestion'] = securityQuestion;
+    if (securityAnswer != null) payload['securityAnswer'] = securityAnswer;
 
     final response = await _api.post('/auth/student/register', payload);
 
@@ -57,6 +61,30 @@ class AuthService {
     }
 
     return AppUser.fromJson(response['user']);
+  }
+
+  // Get Student Security Question
+  Future<String> getStudentSecurityQuestion(String identifier) async {
+    final response = await _api.post('/auth/student/security-question', {
+      'identifier': identifier,
+    });
+    return response['securityQuestion'] ?? '';
+  }
+
+  // Reset Student Password Using Security Question & Answer
+  Future<String> resetStudentPasswordWithQA({
+    required String identifier,
+    required String securityAnswer,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final response = await _api.post('/auth/student/reset-password-qa', {
+      'identifier': identifier,
+      'securityAnswer': securityAnswer,
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
+    });
+    return response['message'] ?? 'Password reset successfully. You can now log in.';
   }
 
   // Admin Login (Email + Password for College Admin / Super Admin)
