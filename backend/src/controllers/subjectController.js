@@ -41,7 +41,7 @@ const getSubjects = async (req, res) => {
 
 // @desc    Create new subject
 // @route   POST /api/subjects
-// @access  Private (College Admin / Super Admin)
+// @access  Private (College Admin Only)
 const createSubject = async (req, res) => {
   try {
     const { name, code, department, course, year, semester } = req.body;
@@ -50,6 +50,13 @@ const createSubject = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Subject name is required',
+      });
+    }
+
+    if (!req.user.collegeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'College ID is required to create a subject',
       });
     }
 
@@ -97,7 +104,7 @@ const createSubject = async (req, res) => {
 
 // @desc    Update subject
 // @route   PUT /api/subjects/:id
-// @access  Private (College Admin / Super Admin)
+// @access  Private (College Admin Only)
 const updateSubject = async (req, res) => {
   try {
     let subject = await Subject.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
@@ -110,10 +117,7 @@ const updateSubject = async (req, res) => {
     }
 
     // College Data Isolation Check
-    if (
-      req.user.role !== 'superAdmin' &&
-      subject.collegeId.toString() !== req.user.collegeId.toString()
-    ) {
+    if (subject.collegeId.toString() !== req.user.collegeId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to modify subjects of another college',
@@ -139,7 +143,7 @@ const updateSubject = async (req, res) => {
 
 // @desc    Soft Delete subject
 // @route   DELETE /api/subjects/:id
-// @access  Private (College Admin / Super Admin)
+// @access  Private (College Admin Only)
 const deleteSubject = async (req, res) => {
   try {
     const subject = await Subject.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
@@ -152,10 +156,7 @@ const deleteSubject = async (req, res) => {
     }
 
     // College Data Isolation Check
-    if (
-      req.user.role !== 'superAdmin' &&
-      subject.collegeId.toString() !== req.user.collegeId.toString()
-    ) {
+    if (subject.collegeId.toString() !== req.user.collegeId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete subjects of another college',

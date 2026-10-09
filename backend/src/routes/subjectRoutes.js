@@ -12,11 +12,11 @@ const { authorize } = require('../middleware/roleMiddleware');
 router
   .route('/')
   .get(getSubjects)
-  .post(protect, authorize('collegeAdmin', 'superAdmin'), createSubject);
+  .post(protect, authorize('collegeAdmin'), createSubject);
 
 router
   .route('/:id')
-  .put(protect, authorize('collegeAdmin', 'superAdmin'), updateSubject)
-  .delete(protect, authorize('collegeAdmin', 'superAdmin'), deleteSubject);
+  .put(protect, authorize('collegeAdmin'), updateSubject)
+  .delete(protect, authorize('collegeAdmin'), deleteSubject);
 
 module.exports = router;
