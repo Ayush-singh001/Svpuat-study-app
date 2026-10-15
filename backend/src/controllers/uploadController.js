@@ -113,32 +113,62 @@ const streamPdfProxy = async (req, res) => {
       });
     }
 
-    const client = targetUrl.startsWith('https') ? https : http;
+    let fetchUrl = targetUrl;
 
-    client
-      .get(targetUrl, (cloudinaryRes) => {
+    // Generate signed download URL if pointing to Cloudinary
+    if (targetUrl.includes('cloudinary.com')) {
+      const match = targetUrl.match(/\/svpuat_documents\/([^\.\?\/]+)/);
+      if (match && match[1]) {
+        const publicId = `svpuat_documents/${match[1]}`;
+        fetchUrl = cloudinary.utils.private_download_url(
+          publicId,
+          'pdf',
+          {
+            resource_type: 'image',
+            type: 'upload',
+            attachment: false,
+          }
+        );
+      }
+    }
+
+    const fetchStream = (url) => {
+      const client = url.startsWith('https') ? https : http;
+
+      client.get(url, (cloudinaryRes) => {
+        if (cloudinaryRes.statusCode === 301 || cloudinaryRes.statusCode === 302) {
+          const redirectUrl = cloudinaryRes.headers.location;
+          if (redirectUrl) return fetchStream(redirectUrl);
+        }
+
         if (cloudinaryRes.statusCode >= 400) {
           return res.status(cloudinaryRes.statusCode).json({
             success: false,
-            message: 'Error fetching PDF stream from Cloudinary',
+            message: `Error fetching PDF stream from Cloudinary (${cloudinaryRes.statusCode})`,
           });
         }
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline');
         cloudinaryRes.pipe(res);
-      })
-      .on('error', (err) => {
-        res.status(500).json({
-          success: false,
-          message: err.message || 'Error streaming PDF from Cloudinary',
-        });
+      }).on('error', (err) => {
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: err.message || 'Error streaming PDF from Cloudinary',
+          });
+        }
       });
+    };
+
+    fetchStream(fetchUrl);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error proxying PDF stream',
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Server error proxying PDF stream',
+      });
+    }
   }
 };
 

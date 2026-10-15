@@ -70,32 +70,24 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   Future<void> _downloadAndPreparePdf() async {
     try {
-      final api = ApiService();
+      final token = await ApiService().getValidAuthToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception('Not authorized to view PDF. Please log in again.');
+      }
+
       final proxyUri = Uri.parse(
         '${ApiService.baseUrl}/upload/stream-pdf?url=${Uri.encodeComponent(widget.pdfUrl)}',
       );
 
-      final headers = <String, String>{};
-      if (api.authToken != null && api.authToken!.isNotEmpty) {
-        headers['Authorization'] = 'Bearer ${api.authToken}';
-      }
+      final headers = <String, String>{
+        'Authorization': 'Bearer $token',
+      };
 
+      debugPrint('PdfViewerScreen -> Fetching PDF stream via proxy: $proxyUri with Bearer token');
       final response = await http.get(proxyUri, headers: headers);
 
       if (response.statusCode != 200) {
-        // Fallback: direct load if proxy is offline in test mode
-        final fallbackRes = await http.get(Uri.parse(widget.pdfUrl));
-        if (fallbackRes.statusCode == 200) {
-          final tempDir = await getTemporaryDirectory();
-          final tempFile = File('${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.pdf');
-          await tempFile.writeAsBytes(fallbackRes.bodyBytes);
-          if (!mounted) return;
-          setState(() {
-            _localPdfPath = tempFile.path;
-            _isLoading = false;
-          });
-          return;
-        }
         throw Exception('Failed to load PDF document (${response.statusCode})');
       }
 

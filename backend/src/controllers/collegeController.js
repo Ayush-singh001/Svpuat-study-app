@@ -1,13 +1,13 @@
 const College = require('../models/College');
 
-// @desc    Get all active colleges for public selection
+// @desc    Get all active constituent colleges for public selection (excludes SVPUAT university record)
 // @route   GET /api/colleges
 // @access  Public
 const getColleges = async (req, res) => {
   try {
     const { includeInactive } = req.query;
 
-    const query = {};
+    const query = { code: { $ne: 'SVPUAT' } };
     if (includeInactive !== 'true') {
       query.isActive = true;
     }
@@ -20,8 +20,8 @@ const getColleges = async (req, res) => {
       data: colleges,
     });
   } catch (error) {
-    return res.status(200).json({
-      success: true,
+    return res.status(500).json({
+      success: false,
       count: 0,
       data: [],
       error: error.message,
@@ -59,7 +59,7 @@ const getCollegeById = async (req, res) => {
 // @access  Private (Super Admin Only)
 const createCollege = async (req, res) => {
   try {
-    const { name, shortName, location, state, code, logoUrl, description } = req.body;
+    const { name, shortName, location, state, code, logoUrl, description, departments } = req.body;
 
     if (!name || !location || !code) {
       return res.status(400).json({
@@ -71,13 +71,21 @@ const createCollege = async (req, res) => {
     const cleanCode = code.trim().toUpperCase();
 
     // Check duplicate code
-    const existing = await College.findOne({ code: cleanCode });
+    const existing = await College.findOne({ code: cleanCode, isActive: true });
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: 'A college with this code already exists',
+        message: 'An active college with this code already exists',
       });
     }
+
+    const deptList = Array.isArray(departments)
+      ? departments.map((d) => (typeof d === 'string' ? { name: d.trim(), isActive: true } : d))
+      : [
+          { name: 'Computer Science & Engineering', isActive: true },
+          { name: 'Agronomy', isActive: true },
+          { name: 'Biotechnology', isActive: true },
+        ];
 
     const college = await College.create({
       name: name.trim(),
@@ -88,6 +96,7 @@ const createCollege = async (req, res) => {
       logoUrl: logoUrl || '',
       description: description || '',
       isActive: true,
+      departments: deptList,
     });
 
     return res.status(201).json({
@@ -163,7 +172,7 @@ const toggleCollegeActive = async (req, res) => {
   }
 };
 
-// @desc    Delete college
+// @desc    Soft Delete / Deactivate college
 // @route   DELETE /api/colleges/:id
 // @access  Private (Super Admin Only)
 const deleteCollege = async (req, res) => {
@@ -176,24 +185,142 @@ const deleteCollege = async (req, res) => {
       });
     }
 
-    // Do not allow deleting SVPUAT default college
-    if (college.code === 'SVPUAT') {
-      return res.status(400).json({
-        success: false,
-        message: 'SVPUAT primary college cannot be deleted',
-      });
-    }
-
-    await college.deleteOne();
+    college.isActive = false;
+    await college.save();
 
     return res.status(200).json({
       success: true,
-      message: 'College deleted successfully',
+      message: 'College deactivated successfully',
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error deleting college',
+    });
+  }
+};
+
+// @desc    Get active departments for a specific college
+// @route   GET /api/colleges/:id/departments
+// @access  Public
+const getDepartments = async (req, res) => {
+  try {
+    const college = await College.findById(req.params.id);
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found',
+      });
+    }
+
+    const activeDepts = (college.departments || [])
+      .filter((d) => d.isActive !== false)
+      .map((d) => d.name);
+
+    return res.status(200).json({
+      success: true,
+      count: activeDepts.length,
+      data: activeDepts,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error fetching departments',
+    });
+  }
+};
+
+// @desc    Add department to a college
+// @route   POST /api/colleges/:id/departments
+// @access  Private (Super Admin Only)
+const addDepartment = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department name is required',
+      });
+    }
+
+    const college = await College.findById(req.params.id);
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found',
+      });
+    }
+
+    const cleanName = name.trim();
+    if (!college.departments) college.departments = [];
+
+    const exists = college.departments.some(
+      (d) => d.name.toLowerCase() === cleanName.toLowerCase() && d.isActive !== false
+    );
+
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department already exists for this college',
+      });
+    }
+
+    college.departments.push({ name: cleanName, isActive: true });
+    await college.save();
+
+    const activeDepts = college.departments.filter((d) => d.isActive !== false).map((d) => d.name);
+
+    return res.status(201).json({
+      success: true,
+      message: `Department "${cleanName}" added successfully to ${college.name}`,
+      data: activeDepts,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error adding department',
+    });
+  }
+};
+
+// @desc    Deactivate department from a college
+// @route   DELETE /api/colleges/:id/departments/:deptName
+// @access  Private (Super Admin Only)
+const deleteDepartment = async (req, res) => {
+  try {
+    const { id, deptName } = req.params;
+    const college = await College.findById(id);
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found',
+      });
+    }
+
+    const decodedName = decodeURIComponent(deptName).trim();
+    if (college.departments) {
+      college.departments = college.departments.map((d) => {
+        if (d.name.toLowerCase() === decodedName.toLowerCase()) {
+          d.isActive = false;
+        }
+        return d;
+      });
+      await college.save();
+    }
+
+    const activeDepts = (college.departments || [])
+      .filter((d) => d.isActive !== false)
+      .map((d) => d.name);
+
+    return res.status(200).json({
+      success: true,
+      message: `Department "${decodedName}" deactivated successfully`,
+      data: activeDepts,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error deleting department',
     });
   }
 };
@@ -205,4 +332,7 @@ module.exports = {
   updateCollege,
   toggleCollegeActive,
   deleteCollege,
+  getDepartments,
+  addDepartment,
+  deleteDepartment,
 };

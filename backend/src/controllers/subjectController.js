@@ -12,7 +12,10 @@ const getSubjects = async (req, res) => {
   try {
     const { collegeId, course, department, year, semester } = req.query;
 
-    let targetCollegeId = null;
+    const filter = { isDeleted: { $ne: true } };
+
+    const svpuat = await College.findOne({ code: 'SVPUAT' });
+    const svpuatId = svpuat ? svpuat._id : null;
 
     if (collegeId && collegeId !== 'col_svpuat') {
       if (!mongoose.Types.ObjectId.isValid(collegeId)) {
@@ -21,21 +24,17 @@ const getSubjects = async (req, res) => {
           message: 'Invalid college ID format provided',
         });
       }
-      targetCollegeId = new mongoose.Types.ObjectId(collegeId);
-    } else {
-      const svpuat = await College.findOne({ code: 'SVPUAT' });
-      if (!svpuat) {
-        return res.status(500).json({
-          success: false,
-          message: 'Primary SVPUAT University record not configured in database',
-        });
+      const targetCollegeId = new mongoose.Types.ObjectId(collegeId);
+      if (svpuatId && !targetCollegeId.equals(svpuatId)) {
+        filter.$or = [
+          { collegeId: targetCollegeId },
+          { collegeId: svpuatId },
+        ];
+      } else {
+        filter.collegeId = targetCollegeId;
       }
-      targetCollegeId = svpuat._id;
-    }
-
-    const filter = { isDeleted: { $ne: true } };
-    if (targetCollegeId) {
-      filter.collegeId = targetCollegeId;
+    } else if (svpuatId) {
+      filter.collegeId = svpuatId;
     }
 
     if (course && course.trim()) filter.course = course.trim();
@@ -46,14 +45,29 @@ const getSubjects = async (req, res) => {
     }
 
     // Query distinct subject names across materials and questions
-    const [noteSubjects, paperSubjects, syllabusSubjects, questionSubjects] = await Promise.all([
+    let [noteSubjects, paperSubjects, syllabusSubjects, questionSubjects] = await Promise.all([
       Note.distinct('subject', filter),
       QuestionPaper.distinct('subject', filter),
       Syllabus.distinct('subject', filter),
       ImportantQuestion.distinct('subject', filter),
     ]);
 
-    const allRaw = [...noteSubjects, ...paperSubjects, ...syllabusSubjects, ...questionSubjects];
+    let allRaw = [...noteSubjects, ...paperSubjects, ...syllabusSubjects, ...questionSubjects];
+
+    // Fallback: If no subjects found for specific department, query subjects for college/course/year/semester
+    if (allRaw.length === 0 && filter.department) {
+      const fallbackFilter = { ...filter };
+      delete fallbackFilter.department;
+
+      const [fNotes, fPapers, fSyllabus, fQuestions] = await Promise.all([
+        Note.distinct('subject', fallbackFilter),
+        QuestionPaper.distinct('subject', fallbackFilter),
+        Syllabus.distinct('subject', fallbackFilter),
+        ImportantQuestion.distinct('subject', fallbackFilter),
+      ]);
+      allRaw = [...fNotes, ...fPapers, ...fSyllabus, ...fQuestions];
+    }
+
     const uniqueMap = new Map();
 
     for (const raw of allRaw) {

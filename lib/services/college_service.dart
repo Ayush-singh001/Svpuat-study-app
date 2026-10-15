@@ -59,4 +59,43 @@ class CollegeService {
   Future<void> deleteCollege(String collegeId) async {
     await _api.delete('/colleges/$collegeId');
   }
+
+  // Department Management
+  Future<List<String>> getDepartments(String collegeId) async {
+    if (collegeId.isEmpty || collegeId == 'col_svpuat') {
+      return [
+        'Computer Science & Engineering',
+        'Agronomy',
+        'Biotechnology',
+        'Horticulture',
+        'Soil Science',
+      ];
+    }
+    try {
+      final response = await _api.get('/colleges/$collegeId/departments');
+      final List data = response['data'] ?? [];
+      return data.map((d) => d.toString()).toList();
+    } catch (_) {
+      return [
+        'Computer Science & Engineering',
+        'Agronomy',
+        'Biotechnology',
+      ];
+    }
+  }
+
+  Future<List<String>> addDepartment({required String collegeId, required String name}) async {
+    final response = await _api.post('/colleges/$collegeId/departments', {
+      'name': name,
+    });
+    final List data = response['data'] ?? [];
+    return data.map((d) => d.toString()).toList();
+  }
+
+  Future<List<String>> deleteDepartment({required String collegeId, required String name}) async {
+    final encodedName = Uri.encodeComponent(name);
+    final response = await _api.delete('/colleges/$collegeId/departments/$encodedName');
+    final List data = response['data'] ?? [];
+    return data.map((d) => d.toString()).toList();
+  }
 }

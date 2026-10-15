@@ -1,16 +1,18 @@
 const mongoose = require('mongoose');
 const Note = require('../models/Note');
-const Subject = require('../models/Subject');
 const College = require('../models/College');
 
-// @desc    Get notes (filtered by department, course, year, semester, subject, collegeId)
+// @desc    Get notes (filtered by department, course, year, semester, subject, unit, collegeId)
 // @route   GET /api/notes
 // @access  Public / Private
 const getNotes = async (req, res) => {
   try {
-    const { department, course, year, semester, subject, collegeId } = req.query;
+    const { department, course, year, semester, subject, unit, collegeId } = req.query;
 
     const query = { isDeleted: { $ne: true } };
+
+    const svpuat = await College.findOne({ code: 'SVPUAT' });
+    const svpuatId = svpuat ? svpuat._id : null;
 
     if (collegeId && collegeId !== 'col_svpuat') {
       if (!mongoose.Types.ObjectId.isValid(collegeId)) {
@@ -19,16 +21,17 @@ const getNotes = async (req, res) => {
           message: 'Invalid college ID format provided',
         });
       }
-      query.collegeId = collegeId;
-    } else {
-      const svpuat = await College.findOne({ code: 'SVPUAT' });
-      if (!svpuat) {
-        return res.status(500).json({
-          success: false,
-          message: 'Primary SVPUAT University record not found in database',
-        });
+      const targetCollegeId = new mongoose.Types.ObjectId(collegeId);
+      if (svpuatId && !targetCollegeId.equals(svpuatId)) {
+        query.$or = [
+          { collegeId: targetCollegeId },
+          { collegeId: svpuatId },
+        ];
+      } else {
+        query.collegeId = targetCollegeId;
       }
-      query.collegeId = svpuat._id;
+    } else if (svpuatId) {
+      query.collegeId = svpuatId;
     }
 
     if (course) query.course = course;
@@ -43,7 +46,18 @@ const getNotes = async (req, res) => {
       query.subject = { $regex: subject.trim(), $options: 'i' };
     }
 
-    const notes = await Note.find(query).sort({ createdAt: -1 });
+    if (unit && unit.trim()) {
+      query.unit = { $regex: unit.trim(), $options: 'i' };
+    }
+
+    let notes = await Note.find(query).sort({ createdAt: -1 });
+
+    // Fallback if specific department filter yields 0 notes for subject
+    if (notes.length === 0 && query.department) {
+      const fallbackQuery = { ...query };
+      delete fallbackQuery.department;
+      notes = await Note.find(fallbackQuery).sort({ createdAt: -1 });
+    }
 
     return res.status(200).json({
       success: true,
@@ -59,7 +73,7 @@ const getNotes = async (req, res) => {
   }
 };
 
-// @desc    Create new note with automatic subject creation/reuse
+// @desc    Create new note
 // @route   POST /api/notes
 // @access  Private (College Admin / Super Admin)
 const createNote = async (req, res) => {
@@ -72,10 +86,12 @@ const createNote = async (req, res) => {
       year,
       semester,
       subject,
+      unit,
       fileUrl,
       publicId,
       fileName,
       fileSize,
+      collegeId,
     } = req.body;
 
     if (!title || !description) {
@@ -94,6 +110,12 @@ const createNote = async (req, res) => {
 
     // Resolve Target College ID
     let targetCollegeId = req.user.collegeId;
+
+    // Super Admin can specify target college ID
+    if (req.user.role === 'superAdmin' && collegeId && mongoose.Types.ObjectId.isValid(collegeId)) {
+      targetCollegeId = collegeId;
+    }
+
     if (!targetCollegeId) {
       const svpuat = await College.findOne({ code: 'SVPUAT' });
       if (!svpuat) {
@@ -106,34 +128,11 @@ const createNote = async (req, res) => {
     }
 
     const cleanSubject = subject.trim().replace(/\s+/g, ' ');
+    const cleanUnit = unit ? unit.trim().replace(/\s+/g, ' ') : '';
     const cleanCourse = course || 'B.Tech';
     const cleanDept = department || 'Computer Science & Engineering';
     const cleanYear = year || '2nd Year';
     const cleanSemester = semester || '3rd Semester';
-
-    // Automatic Subject Reuse / Creation Check
-    const existingSubject = await Subject.findOne({
-      name: { $regex: new RegExp(`^${cleanSubject}$`, 'i') },
-      collegeId: targetCollegeId,
-      course: cleanCourse,
-      semester: cleanSemester,
-      isDeleted: { $ne: true },
-    });
-
-    if (!existingSubject) {
-      // Create new Subject document in MongoDB Atlas automatically
-      await Subject.create({
-        name: cleanSubject,
-        code: '',
-        department: cleanDept,
-        course: cleanCourse,
-        year: cleanYear,
-        semester: cleanSemester,
-        collegeId: targetCollegeId,
-        createdBy: req.user._id,
-        isDeleted: false,
-      });
-    }
 
     // Create Note Document in MongoDB Atlas
     const note = await Note.create({
@@ -144,6 +143,7 @@ const createNote = async (req, res) => {
       year: cleanYear,
       semester: cleanSemester,
       subject: cleanSubject,
+      unit: cleanUnit,
       fileUrl: fileUrl || '',
       publicId: publicId || '',
       fileName: fileName || '',
@@ -190,6 +190,10 @@ const updateNote = async (req, res) => {
 
     if (req.body.subject) {
       req.body.subject = req.body.subject.trim().replace(/\s+/g, ' ');
+    }
+
+    if (req.body.unit) {
+      req.body.unit = req.body.unit.trim().replace(/\s+/g, ' ');
     }
 
     note = await Note.findByIdAndUpdate(req.params.id, req.body, {

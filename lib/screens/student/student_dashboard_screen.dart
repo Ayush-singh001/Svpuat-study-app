@@ -3,7 +3,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/content_model.dart';
 import '../../services/mock_state_service.dart';
-import '../../widgets/content_card.dart';
 import '../../widgets/ui_helpers.dart';
 import 'notices_screen.dart';
 import 'notifications_screen.dart';
@@ -31,7 +30,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -112,15 +110,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     final stateService = MockStateService();
     final user = stateService.currentUser;
     final allContents = stateService.getContentsByCollege(AppConstants.svpuatCollegeId);
-
-    // Filtered Content based on search query
-    final filteredContents = allContents.where((content) {
-      if (_searchQuery.isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      return content.title.toLowerCase().contains(q) ||
-          content.description.toLowerCase().contains(q) ||
-          (content.subject?.toLowerCase().contains(q) ?? false);
-    }).toList();
 
     // Latest notices subset for Home section
     final latestNotices = allContents
@@ -303,31 +292,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             )
           else
             ...latestNotices.map((notice) => _buildNoticeQuickCard(context, notice)),
-
-          const SizedBox(height: 28),
-
-          // "Recent Uploads" Feed Section
-          SectionHeader(
-            title: 'Recent Uploads',
-            subtitle: 'Recently published academic resources',
-            trailing: Text(
-              '${filteredContents.length} items',
-              style: const TextStyle(fontSize: 12, color: AppColors.textLight),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          if (filteredContents.isEmpty)
-            const EmptyStateView(
-              message: 'No study materials match your search criteria.',
-            )
-          else
-            ...filteredContents.map(
-              (content) => ContentCard(
-                content: content,
-                onTap: () => _showContentModal(context, content),
-              ),
-            ),
         ],
       ),
     );
@@ -348,7 +312,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: Color.alphaBlend(Colors.transparent, Colors.transparent) == Colors.transparent
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),

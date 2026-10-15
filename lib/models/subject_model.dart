@@ -19,19 +19,30 @@ class SubjectItem {
     required this.collegeId,
   });
 
-  factory SubjectItem.fromJson(Map<String, dynamic> json) {
-    return SubjectItem(
-      id: json['id'] ?? json['_id'] ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      department: json['department'] ?? 'Computer Science & Engineering',
-      course: json['course'] ?? 'B.Tech',
-      year: json['year'] ?? '2nd Year',
-      semester: json['semester'] ?? '3rd Semester',
-      collegeId: json['collegeId'] is Map
-          ? (json['collegeId']['_id'] ?? json['collegeId']['id'] ?? '')
-          : (json['collegeId'] ?? 'col_svpuat'),
-    );
+  factory SubjectItem.fromJson(dynamic json) {
+    if (json is String) {
+      return SubjectItem(
+        id: json,
+        name: json,
+        code: '',
+        collegeId: 'col_svpuat',
+      );
+    }
+    if (json is Map) {
+      return SubjectItem(
+        id: json['id'] ?? json['_id'] ?? '',
+        name: json['name'] ?? '',
+        code: json['code'] ?? '',
+        department: json['department'] ?? 'Computer Science & Engineering',
+        course: json['course'] ?? 'B.Tech',
+        year: json['year'] ?? '2nd Year',
+        semester: json['semester'] ?? '3rd Semester',
+        collegeId: json['collegeId'] is Map
+            ? (json['collegeId']['_id'] ?? json['collegeId']['id'] ?? '')
+            : (json['collegeId'] ?? 'col_svpuat'),
+      );
+    }
+    return SubjectItem(id: '', name: json.toString(), collegeId: 'col_svpuat');
   }
 
   Map<String, dynamic> toJson() {

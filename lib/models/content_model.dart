@@ -9,6 +9,7 @@ class StudyContent {
   final String? year;
   final String? semester;
   final String? subject;
+  final String? unit; // e.g., 'Unit 1 - Introduction to Data Structures'
   final String? examType; // 'Mid-Term Exam', 'End-Term Exam', etc.
   final String? paperYear; // e.g., '2024'
   final String? fileUrl;
@@ -29,6 +30,7 @@ class StudyContent {
     this.year,
     this.semester,
     this.subject,
+    this.unit,
     this.examType,
     this.paperYear,
     this.fileUrl,
@@ -45,12 +47,15 @@ class StudyContent {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       type: json['type'] ?? 'Notes',
-      collegeId: json['collegeId'] ?? 'col_svpuat',
+      collegeId: json['collegeId'] is Map
+          ? (json['collegeId']['_id'] ?? json['collegeId']['id'] ?? '')
+          : (json['collegeId'] ?? 'col_svpuat'),
       course: json['course'],
       department: json['department'],
       year: json['year'],
       semester: json['semester'],
       subject: json['subject'],
+      unit: json['unit'],
       examType: json['examType'],
       paperYear: json['paperYear'],
       fileUrl: json['fileUrl'],
@@ -60,7 +65,9 @@ class StudyContent {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
-      uploadedBy: json['uploadedBy'] ?? 'Admin',
+      uploadedBy: json['uploadedBy'] is Map
+          ? (json['uploadedBy']['fullName'] ?? json['uploadedBy']['name'] ?? 'Admin')
+          : (json['uploadedBy'] ?? 'Admin'),
     );
   }
 
@@ -76,6 +83,7 @@ class StudyContent {
       'year': year,
       'semester': semester,
       'subject': subject,
+      'unit': unit,
       'examType': examType,
       'paperYear': paperYear,
       'fileUrl': fileUrl,

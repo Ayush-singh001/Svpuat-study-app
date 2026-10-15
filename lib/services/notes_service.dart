@@ -10,6 +10,7 @@ class NotesService {
     String? year,
     String? semester,
     String? subject,
+    String? unit,
     String? collegeId,
   }) async {
     final queryParams = <String, String>{};
@@ -18,6 +19,7 @@ class NotesService {
     if (year != null && year.isNotEmpty) queryParams['year'] = year;
     if (semester != null && semester.isNotEmpty) queryParams['semester'] = semester;
     if (subject != null && subject.isNotEmpty) queryParams['subject'] = subject;
+    if (unit != null && unit.isNotEmpty) queryParams['unit'] = unit;
     if (collegeId != null && collegeId.isNotEmpty) queryParams['collegeId'] = collegeId;
 
     final response = await _api.get('/notes', queryParams: queryParams);
@@ -38,7 +40,12 @@ class NotesService {
       'year': note.year,
       'semester': note.semester,
       'subject': note.subject,
+      'unit': note.unit,
       'fileUrl': note.fileUrl,
+      'publicId': note.publicId,
+      'fileName': note.fileName,
+      'fileSize': note.fileSize,
+      'collegeId': note.collegeId,
     });
 
     final json = response['data'];
@@ -55,7 +62,12 @@ class NotesService {
       'year': note.year,
       'semester': note.semester,
       'subject': note.subject,
+      'unit': note.unit,
       'fileUrl': note.fileUrl,
+      'publicId': note.publicId,
+      'fileName': note.fileName,
+      'fileSize': note.fileSize,
+      'collegeId': note.collegeId,
     });
 
     final json = response['data'];

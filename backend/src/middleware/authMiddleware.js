@@ -19,7 +19,7 @@ const protect = async (req, res, next) => {
           .json({ success: false, message: 'User account no longer exists' });
       }
 
-      next();
+      return next();
     } catch (error) {
       console.error('JWT Verification Error:', error.message);
       return res
@@ -28,11 +28,9 @@ const protect = async (req, res, next) => {
     }
   }
 
-  if (!token) {
-    return res
-      .status(401)
-      .json({ success: false, message: 'Not authorized, no token provided' });
-  }
+  return res
+    .status(401)
+    .json({ success: false, message: 'Not authorized, no token provided' });
 };
 
 module.exports = { protect };

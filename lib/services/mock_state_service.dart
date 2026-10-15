@@ -66,30 +66,16 @@ class MockStateService extends ChangeNotifier {
   Future<List<College>> fetchRealColleges() async {
     try {
       final realColleges = await _collegeService.getColleges();
-      if (realColleges.isNotEmpty) {
-        _colleges.clear();
-        _colleges.addAll(realColleges);
-        _selectedCollege ??= _colleges.first;
-        notifyListeners();
-        return _colleges;
-      }
-    } catch (_) {}
-
-    if (_colleges.isEmpty) {
-      for (var colMap in AppConstants.initialColleges) {
-        _colleges.add(College(
-          id: colMap['id']!,
-          name: colMap['name']!,
-          code: colMap['code']!,
-          location: colMap['location']!,
-          description: colMap['description']!,
-        ));
-      }
+      _colleges.clear();
+      _colleges.addAll(realColleges);
       if (_colleges.isNotEmpty) {
         _selectedCollege = _colleges.first;
       }
+      notifyListeners();
+      return _colleges;
+    } catch (_) {
+      return _colleges;
     }
-    return _colleges;
   }
 
   // Real Auth Integration
@@ -219,13 +205,13 @@ class MockStateService extends ChangeNotifier {
 
   Future<void> addCollegeReal(College college) async {
     try {
-      final created = await _collegeService.createCollege(
+      await _collegeService.createCollege(
         name: college.name,
         code: college.code,
         location: college.location,
         description: college.description,
       );
-      _colleges.add(created);
+      await fetchRealColleges();
     } catch (_) {
       addCollege(college);
     }
@@ -234,6 +220,16 @@ class MockStateService extends ChangeNotifier {
 
   void addCollege(College college) {
     _colleges.add(college);
+    notifyListeners();
+  }
+
+  Future<void> editCollegeReal(College updatedCollege) async {
+    try {
+      await _collegeService.updateCollege(updatedCollege);
+      await fetchRealColleges();
+    } catch (_) {
+      editCollege(updatedCollege);
+    }
     notifyListeners();
   }
 
@@ -248,8 +244,11 @@ class MockStateService extends ChangeNotifier {
   Future<void> deleteCollegeReal(String collegeId) async {
     try {
       await _collegeService.deleteCollege(collegeId);
-    } catch (_) {}
-    deleteCollege(collegeId);
+      await fetchRealColleges();
+    } catch (_) {
+      deleteCollege(collegeId);
+    }
+    notifyListeners();
   }
 
   void deleteCollege(String collegeId) {
@@ -394,6 +393,7 @@ class MockStateService extends ChangeNotifier {
     String? year,
     String? semester,
     String? subject,
+    String? collegeId,
   }) async {
     final notes = await _notesService.getNotes(
       course: course,
@@ -401,7 +401,17 @@ class MockStateService extends ChangeNotifier {
       year: year,
       semester: semester,
       subject: subject,
+      collegeId: collegeId,
     );
+    for (var n in notes) {
+      final index = _contents.indexWhere((c) => c.id == n.id);
+      if (index >= 0) {
+        _contents[index] = n;
+      } else {
+        _contents.add(n);
+      }
+    }
+    notifyListeners();
     return notes;
   }
 
@@ -412,6 +422,7 @@ class MockStateService extends ChangeNotifier {
     String? semester,
     String? subject,
     String? examType,
+    String? collegeId,
   }) async {
     final papers = await _paperService.getQuestionPapers(
       course: course,
@@ -420,7 +431,17 @@ class MockStateService extends ChangeNotifier {
       semester: semester,
       subject: subject,
       examType: examType,
+      collegeId: collegeId,
     );
+    for (var p in papers) {
+      final index = _contents.indexWhere((c) => c.id == p.id);
+      if (index >= 0) {
+        _contents[index] = p;
+      } else {
+        _contents.add(p);
+      }
+    }
+    notifyListeners();
     return papers;
   }
 
@@ -429,18 +450,44 @@ class MockStateService extends ChangeNotifier {
     String? department,
     String? year,
     String? semester,
+    String? collegeId,
   }) async {
     final list = await _syllabusService.getSyllabus(
       course: course,
       department: department,
       year: year,
       semester: semester,
+      collegeId: collegeId,
     );
+    for (var s in list) {
+      final index = _contents.indexWhere((c) => c.id == s.id);
+      if (index >= 0) {
+        _contents[index] = s;
+      } else {
+        _contents.add(s);
+      }
+    }
+    notifyListeners();
     return list;
   }
 
-  Future<List<StudyContent>> fetchRealNotices({String? department}) async {
-    final list = await _noticeService.getNotices(department: department);
+  Future<List<StudyContent>> fetchRealNotices({
+    String? department,
+    String? collegeId,
+  }) async {
+    final list = await _noticeService.getNotices(
+      department: department,
+      collegeId: collegeId,
+    );
+    for (var n in list) {
+      final index = _contents.indexWhere((c) => c.id == n.id);
+      if (index >= 0) {
+        _contents[index] = n;
+      } else {
+        _contents.add(n);
+      }
+    }
+    notifyListeners();
     return list;
   }
 

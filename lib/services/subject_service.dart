@@ -12,15 +12,17 @@ class SubjectService {
     String? collegeId,
   }) async {
     final queryParams = <String, String>{};
-    if (course != null) queryParams['course'] = course;
-    if (department != null) queryParams['department'] = department;
-    if (year != null) queryParams['year'] = year;
-    if (semester != null) queryParams['semester'] = semester;
-    if (collegeId != null) queryParams['collegeId'] = collegeId;
+    if (course != null && course.isNotEmpty) queryParams['course'] = course;
+    if (department != null && department.isNotEmpty) queryParams['department'] = department;
+    if (year != null && year.isNotEmpty) queryParams['year'] = year;
+    if (semester != null && semester.isNotEmpty) queryParams['semester'] = semester;
+    if (collegeId != null && collegeId.isNotEmpty && collegeId != 'col_svpuat') {
+      queryParams['collegeId'] = collegeId;
+    }
 
     final response = await _api.get('/subjects', queryParams: queryParams);
-    final List data = response['data'] ?? [];
-    return data.map((json) => SubjectItem.fromJson(json)).toList();
+    final List data = (response is Map && response['data'] is List) ? response['data'] : [];
+    return data.map((item) => SubjectItem.fromJson(item)).toList();
   }
 
   Future<SubjectItem> createSubject({

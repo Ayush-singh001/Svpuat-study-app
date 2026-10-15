@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -21,11 +22,25 @@ class ApiService {
   }
 
   static const String _tokenKey = 'svpuat_auth_token';
+  static const Duration _timeoutDuration = Duration(seconds: 90);
   String? _authToken;
 
   String? get authToken => _authToken;
 
-  // Initialize token from SharedPreferences safely
+  Future<String?> getValidAuthToken() async {
+    if (_authToken != null && _authToken!.isNotEmpty) {
+      return _authToken;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _authToken = prefs.getString(_tokenKey);
+      return _authToken;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Initialize token from SharedPreferences safely & trigger background server wakeup
   Future<void> init() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -34,6 +49,15 @@ class ApiService {
       debugPrint('SharedPreferences init warning: $e');
       _authToken = null;
     }
+
+    // Non-blocking background ping to wake up Render instance from cold sleep
+    unawaited(
+      http
+          .get(Uri.parse('$baseUrl/colleges'))
+          .timeout(const Duration(seconds: 15))
+          .then((_) {})
+          .catchError((_) {}),
+    );
   }
 
   // Save auth token safely
@@ -63,9 +87,42 @@ class ApiService {
     return headers;
   }
 
+  String _cleanExceptionMessage(dynamic e) {
+    final str = e.toString();
+    if (str.contains('TimeoutException')) {
+      return 'Server connection timed out. If server was sleeping, please tap login again.';
+    }
+    if (str.contains('SocketException')) {
+      return 'Unable to connect to server. Please check your internet connection.';
+    }
+    return str
+        .replaceAll('Exception: ', '')
+        .replaceAll('TimeoutException: ', '')
+        .replaceAll('SocketException: ', '');
+  }
+
+  Future<dynamic> _executeWithRetry(Future<http.Response> Function() action, {int maxRetries = 2}) async {
+    int attempt = 0;
+    while (attempt <= maxRetries) {
+      try {
+        final response = await action().timeout(_timeoutDuration, onTimeout: () {
+          throw TimeoutException('Server connection timed out.');
+        });
+        return _processResponse(response);
+      } catch (e) {
+        if (e.toString().contains('HTTP ')) rethrow;
+        attempt++;
+        if (attempt > maxRetries) {
+          throw Exception(_cleanExceptionMessage(e));
+        }
+        await Future.delayed(const Duration(seconds: 2));
+      }
+    }
+  }
+
   // GET Request
   Future<dynamic> get(String endpoint, {Map<String, String>? queryParams}) async {
-    try {
+    return _executeWithRetry(() {
       var uri = Uri.parse('$baseUrl$endpoint');
       if (queryParams != null && queryParams.isNotEmpty) {
         final cleanParams = <String, String>{};
@@ -76,57 +133,40 @@ class ApiService {
           uri = uri.replace(queryParameters: cleanParams);
         }
       }
-
-      final response = await http.get(uri, headers: _headers);
-      return _processResponse(response);
-    } catch (e) {
-      if (e.toString().contains('HTTP ')) rethrow;
-      throw Exception('Network or Connection Error: $e');
-    }
+      return http.get(uri, headers: _headers);
+    });
   }
 
   // POST Request
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    try {
+    return _executeWithRetry(() {
       final uri = Uri.parse('$baseUrl$endpoint');
-      final response = await http.post(
+      return http.post(
         uri,
         headers: _headers,
         body: jsonEncode(body),
       );
-      return _processResponse(response);
-    } catch (e) {
-      if (e.toString().contains('HTTP ')) rethrow;
-      throw Exception('Network or Connection Error: $e');
-    }
+    });
   }
 
   // PUT Request
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
-    try {
+    return _executeWithRetry(() {
       final uri = Uri.parse('$baseUrl$endpoint');
-      final response = await http.put(
+      return http.put(
         uri,
         headers: _headers,
         body: jsonEncode(body),
       );
-      return _processResponse(response);
-    } catch (e) {
-      if (e.toString().contains('HTTP ')) rethrow;
-      throw Exception('Network or Connection Error: $e');
-    }
+    });
   }
 
   // DELETE Request
   Future<dynamic> delete(String endpoint) async {
-    try {
+    return _executeWithRetry(() {
       final uri = Uri.parse('$baseUrl$endpoint');
-      final response = await http.delete(uri, headers: _headers);
-      return _processResponse(response);
-    } catch (e) {
-      if (e.toString().contains('HTTP ')) rethrow;
-      throw Exception('Network or Connection Error: $e');
-    }
+      return http.delete(uri, headers: _headers);
+    });
   }
 
   // Process HTTP Response

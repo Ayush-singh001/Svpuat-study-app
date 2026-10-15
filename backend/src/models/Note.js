@@ -37,6 +37,11 @@ const noteSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    unit: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     fileUrl: {
       type: String,
       trim: true,

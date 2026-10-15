@@ -29,11 +29,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _fetchRealData() async {
     final state = MockStateService();
+    final user = state.currentUser;
+    final adminCollegeId = (user?.collegeId != null && user!.collegeId.isNotEmpty && user.collegeId != 'col_svpuat')
+        ? user.collegeId
+        : AppConstants.svpuatCollegeId;
+
     await Future.wait([
-      state.fetchRealNotes(),
-      state.fetchRealQuestionPapers(),
-      state.fetchRealSyllabus(),
-      state.fetchRealNotices(),
+      state.fetchRealNotes(collegeId: adminCollegeId),
+      state.fetchRealQuestionPapers(collegeId: adminCollegeId),
+      state.fetchRealSyllabus(collegeId: adminCollegeId),
+      state.fetchRealNotices(collegeId: adminCollegeId),
       state.fetchRealImportantQuestions(),
     ]);
     if (mounted) {
@@ -208,7 +213,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final stateService = MockStateService();
     final user = stateService.currentUser;
 
-    final allContents = stateService.getContentsByCollege(AppConstants.svpuatCollegeId);
+    final adminCollegeId = (user?.collegeId != null && user!.collegeId.isNotEmpty && user.collegeId != 'col_svpuat')
+        ? user.collegeId
+        : AppConstants.svpuatCollegeId;
+
+    final allContents = stateService.getContentsByCollege(adminCollegeId);
     final questions = stateService.importantQuestions;
 
     final filteredContents = _selectedFilter == 'All'
@@ -276,9 +285,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
-                            AppConstants.svpuatFullName,
-                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                          Text(
+                            user?.collegeName.isNotEmpty == true ? user!.collegeName : AppConstants.svpuatFullName,
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -333,7 +342,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       builder: (_) => const AddEditQuestionScreen(),
                     ),
                   );
-                  setState(() {});
+                  _fetchRealData();
                 },
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text('Add Question'),
@@ -363,11 +372,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             builder: (_) => AddEditQuestionScreen(existingQuestion: q),
                           ),
                         );
-                        setState(() {});
+                        _fetchRealData();
                       },
-                      onDelete: () {
-                        stateService.deleteImportantQuestionReal(q.id);
-                        setState(() {});
+                      onDelete: () async {
+                        await stateService.deleteImportantQuestionReal(q.id);
+                        _fetchRealData();
                       },
                     ),
                   ),
@@ -381,12 +390,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 onPressed: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const UploadContentScreen(
-                        collegeId: AppConstants.svpuatCollegeId,
+                      builder: (_) => UploadContentScreen(
+                        collegeId: adminCollegeId,
                       ),
                     ),
                   );
-                  setState(() {});
+                  _fetchRealData();
                 },
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text('Add Material'),
@@ -443,12 +452,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => UploadContentScreen(
-                          collegeId: AppConstants.svpuatCollegeId,
+                          collegeId: adminCollegeId,
                           existingContent: content,
                         ),
                       ),
                     );
-                    setState(() {});
+                    _fetchRealData();
                   },
                   onDelete: () {
                     _confirmDelete(context, content.id, content.title, content.type);
@@ -516,8 +525,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Navigator.of(ctx).pop();
               try {
                 await MockStateService().deleteContentReal(contentId, type);
+                _fetchRealData();
                 if (context.mounted) {
-                  setState(() {});
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Content deleted successfully'),
