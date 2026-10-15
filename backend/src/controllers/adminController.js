@@ -90,6 +90,64 @@ const createCollegeAdmin = async (req, res) => {
   }
 };
 
+// @desc    Super Admin: Update Password for an existing College Admin
+// @route   PUT /api/auth/admin/user/:id/password
+// @access  Private (Super Admin Only)
+const updateCollegeAdminPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid target user ID format',
+      });
+    }
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long',
+      });
+    }
+
+    if (confirmPassword && password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match',
+      });
+    }
+
+    // Target user must exist and have role === 'collegeAdmin'
+    const targetUser = await User.findOne({ _id: id, role: 'collegeAdmin' }).select('+passwordHash');
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Target College Admin account not found or is not a College Admin role',
+      });
+    }
+
+    // Hash new password using bcrypt
+    const salt = await bcrypt.genSalt(10);
+    targetUser.passwordHash = await bcrypt.hash(password, salt);
+    await targetUser.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Password updated successfully for College Admin ${targetUser.fullName}`,
+    });
+  } catch (error) {
+    console.error('Update College Admin Password Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error updating College Admin password',
+    });
+  }
+};
+
 module.exports = {
   createCollegeAdmin,
+  updateCollegeAdminPassword,
 };

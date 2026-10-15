@@ -426,7 +426,7 @@ const adminLogin = async (req, res) => {
   }
 };
 
-// @desc    Request Password Reset Link via Email (Generic response to prevent email enumeration)
+// @desc    Request Password Reset Link via Email (Student only - generic response to prevent enumeration)
 // @route   POST /api/auth/forgot-password
 // @access  Public
 const forgotPassword = async (req, res) => {
@@ -447,7 +447,8 @@ const forgotPassword = async (req, res) => {
     const cleanEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: cleanEmail });
 
-    if (!user) {
+    // Admin accounts must NOT issue reset tokens or send self-service reset emails
+    if (!user || user.role === 'collegeAdmin' || user.role === 'superAdmin') {
       return res.status(200).json({
         success: true,
         message: genericMessage,
@@ -491,7 +492,7 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// @desc    Reset Password using Token
+// @desc    Reset Password using Token (Locked strictly to student role)
 // @route   POST /api/auth/reset-password
 // @access  Public
 const resetPassword = async (req, res) => {
@@ -524,10 +525,11 @@ const resetPassword = async (req, res) => {
     // Hash supplied token to match DB entry
     const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
 
-    // Find user with valid unexpired token
+    // Find user with valid unexpired token (locked strictly to student role)
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: new Date() },
+      role: 'student',
     }).select('+passwordHash +resetPasswordToken +resetPasswordExpires');
 
     if (!user) {

@@ -12,7 +12,7 @@ const {
   getMe,
   logout,
 } = require('../controllers/authController');
-const { createCollegeAdmin } = require('../controllers/adminController');
+const { createCollegeAdmin, updateCollegeAdminPassword } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
@@ -25,6 +25,7 @@ router.post('/student/reset-password-qa', resetStudentPasswordWithQA);
 // Admin Auth Routes
 router.post('/admin/login', adminLogin);
 router.post('/admin/user', protect, authorize('superAdmin'), createCollegeAdmin);
+router.put('/admin/user/:id/password', protect, authorize('superAdmin'), updateCollegeAdminPassword);
 
 // Password Reset Routes
 router.post('/forgot-password', forgotPassword);

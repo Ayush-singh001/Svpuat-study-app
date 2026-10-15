@@ -9,8 +9,6 @@ import '../../widgets/question_card.dart';
 import '../../widgets/ui_helpers.dart';
 import '../auth/login_screen.dart';
 import 'add_edit_question_screen.dart';
-import 'manage_subjects_screen.dart';
-import 'send_notification_screen.dart';
 import 'upload_content_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -227,17 +225,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: const Text('SVPUAT Admin Portal'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_active_outlined),
-            tooltip: 'Send Push Notification',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const SendNotificationScreen(),
-                ),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.lock_reset_rounded),
             tooltip: 'Change Password',
             onPressed: () => _showChangePasswordDialog(context),
@@ -333,34 +320,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 20),
-
-            // Subject Management Quick Module Card
-            Card(
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(25),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.book_rounded, color: AppColors.primary, size: 28),
-                ),
-                title: const Text(
-                  'Manage Course Subjects',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text('Add, edit, or remove subjects permanently in MongoDB Atlas'),
-                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
-                onTap: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ManageSubjectsScreen()),
-                  );
-                  setState(() {});
-                },
-              ),
             ),
             const SizedBox(height: 24),
 

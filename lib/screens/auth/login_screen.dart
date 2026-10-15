@@ -355,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   CustomButton(
                     text: 'Sign In as $_selectedRole',
                     isLoading: _isLoading,

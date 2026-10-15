@@ -1,22 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getSubjects,
-  createSubject,
-  updateSubject,
-  deleteSubject,
-} = require('../controllers/subjectController');
-const { protect } = require('../middleware/authMiddleware');
-const { authorize } = require('../middleware/roleMiddleware');
+const { getSubjects } = require('../controllers/subjectController');
 
-router
-  .route('/')
-  .get(getSubjects)
-  .post(protect, authorize('collegeAdmin'), createSubject);
-
-router
-  .route('/:id')
-  .put(protect, authorize('collegeAdmin'), updateSubject)
-  .delete(protect, authorize('collegeAdmin'), deleteSubject);
+router.get('/', getSubjects);
 
 module.exports = router;

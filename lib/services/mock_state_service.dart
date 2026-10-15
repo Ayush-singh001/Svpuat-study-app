@@ -60,9 +60,6 @@ class MockStateService extends ChangeNotifier {
   Future<void> _initialize() async {
     await initSession();
     await fetchRealColleges();
-
-    _loadSampleContents();
-    _loadSampleQuestions();
     notifyListeners();
   }
 
@@ -93,146 +90,6 @@ class MockStateService extends ChangeNotifier {
       }
     }
     return _colleges;
-  }
-
-  void _loadSampleContents() {
-    if (_contents.isNotEmpty) return;
-    _contents.addAll([
-      StudyContent(
-        id: 'svp_101',
-        title: 'Data Structures & Algorithms Unit 1 - Trees & Graphs',
-        description:
-            'Comprehensive lecture notes covering Binary Trees, AVL Trees, B-Trees, Graph Traversals (BFS, DFS), and Shortest Path Algorithms.',
-        type: AppConstants.typeNotes,
-        collegeId: AppConstants.svpuatCollegeId,
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        subject: 'Data Structures & Algorithms',
-        fileUrl: '',
-        fileName: 'SVPUAT_DSA_Unit1_Notes.pdf',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        uploadedBy: 'Dr. R.K. Singh (CSE Dept)',
-      ),
-      StudyContent(
-        id: 'svp_102',
-        title: 'Database Management Systems - Relational Algebra & SQL',
-        description:
-            'Complete class notes on ER Modeling, Normalization (1NF to 3NF, BCNF), and advanced SQL queries with examples.',
-        type: AppConstants.typeNotes,
-        collegeId: AppConstants.svpuatCollegeId,
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        subject: 'Database Management Systems',
-        fileUrl: '',
-        fileName: 'SVPUAT_DBMS_Notes.pdf',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        uploadedBy: 'Prof. Anil Kumar',
-      ),
-      StudyContent(
-        id: 'svp_201',
-        title: 'Mid-Term Exam 2024 - Database Management Systems',
-        description:
-            'Official SVPUAT Mid-Term Question Paper for 3rd Semester B.Tech CS.',
-        type: AppConstants.typeQuestionPaper,
-        collegeId: AppConstants.svpuatCollegeId,
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        subject: 'Database Management Systems',
-        examType: 'Mid-Term Exam',
-        paperYear: '2024',
-        fileUrl: '',
-        fileName: 'SVPUAT_DBMS_Mid2024_Paper.pdf',
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        uploadedBy: 'SVPUAT Examination Cell',
-      ),
-      StudyContent(
-        id: 'svp_301',
-        title: 'B.Tech CS Engineering Complete Curriculum & Syllabus (2024-2028)',
-        description:
-            'Official approved course scheme, credit structure, and detailed unit-wise syllabus for B.Tech CSE.',
-        type: AppConstants.typeSyllabus,
-        collegeId: AppConstants.svpuatCollegeId,
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: 'All Years',
-        semester: 'All Semesters',
-        fileUrl: '',
-        fileName: 'SVPUAT_BTech_CS_Syllabus.pdf',
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        uploadedBy: 'Dean Academics',
-      ),
-      StudyContent(
-        id: 'svp_401',
-        title: 'Mid-Term Examination Schedule Announcement - Odd Semester 2024',
-        description:
-            'Mid-Term exams for all B.Tech and B.Sc courses will commence from Nov 18. Students must bring their university ID cards.',
-        type: AppConstants.typeNotice,
-        collegeId: AppConstants.svpuatCollegeId,
-        department: 'All Departments',
-        semester: 'All Semesters',
-        fileUrl: '',
-        fileName: 'SVPUAT_Exam_Notice_Nov2024.pdf',
-        createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-        uploadedBy: 'Office of Registrar',
-      ),
-    ]);
-  }
-
-  void _loadSampleQuestions() {
-    if (_importantQuestions.isNotEmpty) return;
-    _importantQuestions.addAll([
-      ImportantQuestion(
-        id: 'iq_101',
-        question:
-            'Explain Dijkstra\'s Shortest Path Algorithm with a step-by-step trace on a weighted directed graph of 5 vertices.',
-        subject: 'Data Structures & Algorithms',
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        unitTopic: 'Unit 4 - Graphs & Shortest Path',
-        questionType: 'Long Answer',
-        difficulty: 'Hard',
-        collegeId: AppConstants.svpuatCollegeId,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-      ImportantQuestion(
-        id: 'iq_102',
-        question:
-            'What is BCNF (Boyce-Codd Normal Form)? How does it differ from 3NF? Give a concrete relation schema example.',
-        subject: 'Database Management Systems',
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        unitTopic: 'Unit 3 - Normalization & Relational Design',
-        questionType: 'Theory',
-        difficulty: 'Medium',
-        collegeId: AppConstants.svpuatCollegeId,
-        createdAt: DateTime.now().subtract(const Duration(days: 4)),
-      ),
-      ImportantQuestion(
-        id: 'iq_103',
-        question:
-            'Differentiate between Preorder, Inorder, and Postorder Binary Tree Traversals. Write recursive functions for Inorder traversal in C/C++.',
-        subject: 'Data Structures & Algorithms',
-        course: 'B.Tech',
-        department: 'Computer Science & Engineering',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        unitTopic: 'Unit 2 - Trees & Binary Search Trees',
-        questionType: 'Short Answer',
-        difficulty: 'Easy',
-        collegeId: AppConstants.svpuatCollegeId,
-        createdAt: DateTime.now().subtract(const Duration(days: 6)),
-      ),
-    ]);
   }
 
   // Real Auth Integration
@@ -402,7 +259,7 @@ class MockStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Important Questions Real API & Local Fallback
+  // Important Questions Real API
   Future<List<ImportantQuestion>> fetchRealImportantQuestions({
     String? course,
     String? department,
@@ -420,7 +277,10 @@ class MockStateService extends ChangeNotifier {
         subject: subject,
         search: search,
       );
-      if (questions.isNotEmpty) return questions;
+      _importantQuestions.clear();
+      _importantQuestions.addAll(questions);
+      notifyListeners();
+      return questions;
     } catch (_) {}
 
     return getImportantQuestionsLocal(
@@ -470,31 +330,24 @@ class MockStateService extends ChangeNotifier {
   }
 
   Future<void> addImportantQuestionReal(ImportantQuestion q) async {
-    try {
-      final created = await _importantQuestionService.createImportantQuestion(q);
-      _importantQuestions.insert(0, created);
-    } catch (_) {
-      _importantQuestions.insert(0, q);
-    }
+    final created = await _importantQuestionService.createImportantQuestion(q);
+    _importantQuestions.insert(0, created);
     notifyListeners();
   }
 
   Future<void> updateImportantQuestionReal(ImportantQuestion q) async {
-    try {
-      final updated = await _importantQuestionService.updateImportantQuestion(q);
-      final index = _importantQuestions.indexWhere((item) => item.id == updated.id);
-      if (index != -1) _importantQuestions[index] = updated;
-    } catch (_) {
-      final index = _importantQuestions.indexWhere((item) => item.id == q.id);
-      if (index != -1) _importantQuestions[index] = q;
+    final updated = await _importantQuestionService.updateImportantQuestion(q);
+    final index = _importantQuestions.indexWhere((item) => item.id == updated.id);
+    if (index != -1) {
+      _importantQuestions[index] = updated;
+    } else {
+      _importantQuestions.insert(0, updated);
     }
     notifyListeners();
   }
 
   Future<void> deleteImportantQuestionReal(String id) async {
-    try {
-      await _importantQuestionService.deleteImportantQuestion(id);
-    } catch (_) {}
+    await _importantQuestionService.deleteImportantQuestion(id);
     _importantQuestions.removeWhere((item) => item.id == id);
     notifyListeners();
   }
@@ -542,26 +395,14 @@ class MockStateService extends ChangeNotifier {
     String? semester,
     String? subject,
   }) async {
-    try {
-      final notes = await _notesService.getNotes(
-        course: course,
-        department: department,
-        year: year,
-        semester: semester,
-        subject: subject,
-      );
-      return notes;
-    } catch (_) {
-      return getContentsByCollege(
-        AppConstants.svpuatCollegeId,
-        type: AppConstants.typeNotes,
-        course: course,
-        department: department,
-        year: year,
-        semester: semester,
-        subject: subject,
-      );
-    }
+    final notes = await _notesService.getNotes(
+      course: course,
+      department: department,
+      year: year,
+      semester: semester,
+      subject: subject,
+    );
+    return notes;
   }
 
   Future<List<StudyContent>> fetchRealQuestionPapers({
@@ -572,27 +413,15 @@ class MockStateService extends ChangeNotifier {
     String? subject,
     String? examType,
   }) async {
-    try {
-      final papers = await _paperService.getQuestionPapers(
-        course: course,
-        department: department,
-        year: year,
-        semester: semester,
-        subject: subject,
-        examType: examType,
-      );
-      return papers;
-    } catch (_) {
-      return getContentsByCollege(
-        AppConstants.svpuatCollegeId,
-        type: AppConstants.typeQuestionPaper,
-        course: course,
-        department: department,
-        year: year,
-        semester: semester,
-        subject: subject,
-      );
-    }
+    final papers = await _paperService.getQuestionPapers(
+      course: course,
+      department: department,
+      year: year,
+      semester: semester,
+      subject: subject,
+      examType: examType,
+    );
+    return papers;
   }
 
   Future<List<StudyContent>> fetchRealSyllabus({
@@ -601,59 +430,64 @@ class MockStateService extends ChangeNotifier {
     String? year,
     String? semester,
   }) async {
-    try {
-      final list = await _syllabusService.getSyllabus(
-        course: course,
-        department: department,
-        year: year,
-        semester: semester,
-      );
-      return list;
-    } catch (_) {
-      return getContentsByCollege(
-        AppConstants.svpuatCollegeId,
-        type: AppConstants.typeSyllabus,
-        course: course,
-        department: department,
-        year: year,
-        semester: semester,
-      );
-    }
+    final list = await _syllabusService.getSyllabus(
+      course: course,
+      department: department,
+      year: year,
+      semester: semester,
+    );
+    return list;
   }
 
   Future<List<StudyContent>> fetchRealNotices({String? department}) async {
-    try {
-      final list = await _noticeService.getNotices(department: department);
-      return list;
-    } catch (_) {
-      return getContentsByCollege(
-        AppConstants.svpuatCollegeId,
-        type: AppConstants.typeNotice,
-        department: department,
-      );
-    }
+    final list = await _noticeService.getNotices(department: department);
+    return list;
   }
 
   // Real API Add Content
   Future<void> addContentReal(StudyContent content) async {
-    try {
-      if (content.type == AppConstants.typeNotes) {
-        final newNote = await _notesService.createNote(content);
+    if (content.type == AppConstants.typeNotes) {
+      final newNote = await _notesService.createNote(content);
+      final index = _contents.indexWhere((c) => c.id == newNote.id);
+      if (index >= 0) {
+        _contents[index] = newNote;
+      } else {
         _contents.insert(0, newNote);
-      } else if (content.type == AppConstants.typeQuestionPaper) {
-        final newPaper = await _paperService.createQuestionPaper(content);
-        _contents.insert(0, newPaper);
-      } else if (content.type == AppConstants.typeSyllabus) {
-        final newSyllabus = await _syllabusService.createSyllabus(content);
-        _contents.insert(0, newSyllabus);
-      } else if (content.type == AppConstants.typeNotice) {
-        final newNotice = await _noticeService.createNotice(content);
-        _contents.insert(0, newNotice);
       }
-    } catch (_) {
-      addContent(content);
+      notifyListeners();
+      return;
+    }
+
+    if (content.type == AppConstants.typeQuestionPaper) {
+      final newPaper = await _paperService.createQuestionPaper(content);
+      _contents.insert(0, newPaper);
+    } else if (content.type == AppConstants.typeSyllabus) {
+      final newSyllabus = await _syllabusService.createSyllabus(content);
+      _contents.insert(0, newSyllabus);
+    } else if (content.type == AppConstants.typeNotice) {
+      final newNotice = await _noticeService.createNotice(content);
+      _contents.insert(0, newNotice);
     }
     notifyListeners();
+  }
+
+  // Real API Update Content
+  Future<void> updateContentReal(StudyContent content) async {
+    if (content.type == AppConstants.typeNotes) {
+      final updated = await _notesService.updateNote(content);
+      final index = _contents.indexWhere((item) => item.id == updated.id);
+
+      if (index >= 0) {
+        _contents[index] = updated;
+      } else {
+        _contents.insert(0, updated);
+      }
+
+      notifyListeners();
+      return;
+    }
+
+    updateContent(content);
   }
 
   void addContent(StudyContent content) {
@@ -670,17 +504,19 @@ class MockStateService extends ChangeNotifier {
   }
 
   Future<void> deleteContentReal(String contentId, String type) async {
-    try {
-      if (type == AppConstants.typeNotes) {
-        await _notesService.deleteNote(contentId);
-      } else if (type == AppConstants.typeQuestionPaper) {
-        await _paperService.deleteQuestionPaper(contentId);
-      } else if (type == AppConstants.typeSyllabus) {
-        await _syllabusService.deleteSyllabus(contentId);
-      } else if (type == AppConstants.typeNotice) {
-        await _noticeService.deleteNotice(contentId);
-      }
-    } catch (_) {}
+    if (type == AppConstants.typeNotes) {
+      await _notesService.deleteNote(contentId);
+      deleteContent(contentId);
+      return;
+    }
+
+    if (type == AppConstants.typeQuestionPaper) {
+      await _paperService.deleteQuestionPaper(contentId);
+    } else if (type == AppConstants.typeSyllabus) {
+      await _syllabusService.deleteSyllabus(contentId);
+    } else if (type == AppConstants.typeNotice) {
+      await _noticeService.deleteNotice(contentId);
+    }
     deleteContent(contentId);
   }
 

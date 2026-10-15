@@ -125,6 +125,19 @@ class AuthService {
     return AppUser.fromJson(response['data']);
   }
 
+  // Super Admin: Update Password for an existing College Admin
+  Future<String> updateCollegeAdminPassword({
+    required String adminId,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    final response = await _api.put('/auth/admin/user/$adminId/password', {
+      'password': password,
+      'confirmPassword': confirmPassword,
+    });
+    return response['message'] ?? 'College Admin password updated successfully';
+  }
+
   // Request Password Reset Link
   Future<String> requestForgotPassword(String email) async {
     final response = await _api.post('/auth/forgot-password', {

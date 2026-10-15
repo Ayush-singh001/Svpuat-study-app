@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../../services/mock_state_service.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
 import '../auth/login_screen.dart';
 import 'add_college_admin_screen.dart';
 import 'manage_colleges_screen.dart';
@@ -14,6 +16,163 @@ class SuperAdminDashboardScreen extends StatefulWidget {
 }
 
 class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
+  void _showSetAdminPasswordDialog(BuildContext context) {
+    final adminIdController = TextEditingController();
+    final newPassController = TextEditingController();
+    final confirmPassController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    bool isSubmitting = false;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.security_rounded, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text('Reset College Admin Password', style: TextStyle(fontSize: 15)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (dialogError != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorBg,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            dialogError!,
+                            style: const TextStyle(color: AppColors.error, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      CustomTextField(
+                        controller: adminIdController,
+                        label: 'Target Admin User ID',
+                        hint: 'e.g. 6ac652c82edf58da8c76243f',
+                        prefixIcon: Icons.badge_outlined,
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) return 'Enter Target Admin User ID';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: newPassController,
+                        label: 'New Password (min 8 chars)',
+                        hint: '••••••••',
+                        prefixIcon: Icons.key_rounded,
+                        isPassword: true,
+                        obscureText: obscureNew,
+                        onToggleVisibility: () {
+                          setDialogState(() => obscureNew = !obscureNew);
+                        },
+                        validator: (val) {
+                          if (val == null || val.length < 8) {
+                            return 'Min 8 characters required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      CustomTextField(
+                        controller: confirmPassController,
+                        label: 'Confirm New Password',
+                        hint: '••••••••',
+                        prefixIcon: Icons.lock_reset_rounded,
+                        isPassword: true,
+                        obscureText: obscureConfirm,
+                        onToggleVisibility: () {
+                          setDialogState(() => obscureConfirm = !obscureConfirm);
+                        },
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Confirm new password';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+
+                          if (newPassController.text != confirmPassController.text) {
+                            setDialogState(() {
+                              dialogError = 'New password and confirmation do not match';
+                            });
+                            return;
+                          }
+
+                          setDialogState(() {
+                            isSubmitting = true;
+                            dialogError = null;
+                          });
+
+                          try {
+                            final message = await AuthService().updateCollegeAdminPassword(
+                              adminId: adminIdController.text.trim(),
+                              password: newPassController.text,
+                              confirmPassword: confirmPassController.text,
+                            );
+
+                            if (!context.mounted) return;
+                            Navigator.of(ctx).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(message),
+                                backgroundColor: AppColors.success,
+                              ),
+                            );
+                          } catch (e) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                              dialogError = e.toString().replaceAll('Exception: ', '');
+                            });
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Update Password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final stateService = MockStateService();
@@ -199,6 +358,29 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                   );
                   setState(() {});
                 },
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Management Option 3: Reset College Admin Password
+            Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.lock_reset_rounded, color: AppColors.accent, size: 28),
+                ),
+                title: const Text(
+                  'Reset College Admin Password',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text('Set a new secure password for an existing College Admin account'),
+                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.accent),
+                onTap: () => _showSetAdminPasswordDialog(context),
               ),
             ),
             const SizedBox(height: 32),
