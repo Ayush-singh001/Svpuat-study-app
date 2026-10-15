@@ -355,18 +355,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                        );
-                      },
-                      child: const Text('Forgot Password?', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   CustomButton(
                     text: 'Sign In as $_selectedRole',
